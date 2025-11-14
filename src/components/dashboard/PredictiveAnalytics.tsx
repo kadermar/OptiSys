@@ -26,7 +26,6 @@ interface PredictiveAnalyticsProps {
 export function PredictiveAnalytics({ dateRange }: PredictiveAnalyticsProps) {
   const [predictiveData, setPredictiveData] = useState<PredictiveData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<'table' | 'chart'>('table');
 
   useEffect(() => {
     async function fetchPredictiveData() {
@@ -52,11 +51,11 @@ export function PredictiveAnalytics({ dateRange }: PredictiveAnalyticsProps) {
 
   const getRiskColor = (category: string) => {
     switch (category) {
-      case 'Critical': return { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-200', border: 'border-red-300 dark:border-red-700', bar: '#ef4444' };
-      case 'High': return { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-800 dark:text-orange-200', border: 'border-orange-300 dark:border-orange-700', bar: '#f97316' };
-      case 'Medium': return { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-800 dark:text-yellow-200', border: 'border-yellow-300 dark:border-yellow-700', bar: '#eab308' };
-      case 'Low': return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-200', border: 'border-green-300 dark:border-green-700', bar: '#22c55e' };
-      default: return { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-800 dark:text-gray-200', border: 'border-gray-300 dark:border-gray-600', bar: '#6b7280' };
+      case 'Critical': return { bg: 'bg-red-100', text: 'text-red-900', border: 'border-red-400', bar: '#ef4444' };
+      case 'High': return { bg: 'bg-orange-100', text: 'text-orange-900', border: 'border-orange-400', bar: '#f97316' };
+      case 'Medium': return { bg: 'bg-yellow-100', text: 'text-yellow-900', border: 'border-yellow-400', bar: '#eab308' };
+      case 'Low': return { bg: 'bg-green-100', text: 'text-green-900', border: 'border-green-400', bar: '#22c55e' };
+      default: return { bg: 'bg-gray-100', text: 'text-gray-900', border: 'border-gray-400', bar: '#6b7280' };
     }
   };
 
@@ -79,54 +78,36 @@ export function PredictiveAnalytics({ dateRange }: PredictiveAnalyticsProps) {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+      <div className="bg-white rounded-xl shadow-2xl p-8 border-l-4 border-[#ff0000]">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-2xl font-bold text-[#1c2b40] flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#ff0000] rounded-full flex items-center justify-center text-white text-xl shadow-lg">
+              📊
+            </div>
             Predictive Analytics & Risk Scoring
           </h2>
         </div>
         <div className="flex items-center justify-center py-12">
-          <div className="animate-pulse text-gray-500 dark:text-gray-400">Loading predictive analytics...</div>
+          <div className="animate-pulse text-gray-600 font-medium">Loading predictive analytics...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+    <div className="bg-white rounded-xl shadow-2xl p-8 border-l-4 border-[#ff0000]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-2xl font-bold text-[#1c2b40] flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#ff0000] rounded-full flex items-center justify-center text-white text-xl shadow-lg">
+              📊
+            </div>
             Predictive Analytics & Risk Scoring
           </h2>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-600 mt-2 ml-13">
             AI-powered risk assessment and performance predictions
           </p>
-        </div>
-
-        {/* View Toggle */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setView('table')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              view === 'table'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            Table
-          </button>
-          <button
-            onClick={() => setView('chart')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              view === 'chart'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            Chart
-          </button>
         </div>
       </div>
 
@@ -136,118 +117,102 @@ export function PredictiveAnalytics({ dateRange }: PredictiveAnalyticsProps) {
         </div>
       ) : (
         <>
-          {/* Risk Summary Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-            {riskDistribution.map((risk) => {
-              const colors = getRiskColor(risk.name);
-              return (
-                <div
-                  key={risk.name}
-                  className={`p-3 sm:p-4 rounded-lg border ${colors.border} ${colors.bg}`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
-                      {risk.name} Risk
-                    </span>
-                    <span className="text-lg">{getRiskIcon(risk.name)}</span>
-                  </div>
-                  <div className={`text-xl sm:text-2xl font-bold ${colors.text}`}>
-                    {risk.count}
-                  </div>
-                </div>
-              );
-            })}
+          {/* Risk Distribution Chart */}
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 mb-8 shadow-inner border border-gray-200">
+            <h3 className="text-lg font-bold text-[#1c2b40] mb-4 flex items-center gap-2">
+              <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
+              Risk Distribution by Procedure
+            </h3>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={predictiveData.slice(0, 10)} margin={{ top: 10, right: 10, left: 0, bottom: 70 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#d1d5db" opacity={0.5} />
+                <XAxis
+                  dataKey="name"
+                  angle={-45}
+                  textAnchor="end"
+                  height={100}
+                  tick={{ fill: '#1c2b40', fontSize: 11, fontWeight: 600 }}
+                />
+                <YAxis
+                  tick={{ fill: '#1c2b40', fontWeight: 600 }}
+                  label={{ value: 'Risk Score', angle: -90, position: 'insideLeft', fill: '#1c2b40', fontWeight: 'bold' }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '2px solid #ff0000',
+                    borderRadius: '0.75rem',
+                    color: '#1c2b40',
+                    fontWeight: 600,
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Bar dataKey="risk_score" radius={[8, 8, 0, 0]}>
+                  {predictiveData.slice(0, 10).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={getRiskColor(entry.risk_category).bar} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
 
-          {view === 'chart' ? (
-            /* Chart View */
-            <div className="space-y-6">
-              {/* Risk Distribution Chart */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  Risk Distribution by Procedure
-                </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={predictiveData.slice(0, 10)} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                    <XAxis
-                      dataKey="name"
-                      angle={-45}
-                      textAnchor="end"
-                      height={100}
-                      tick={{ fill: '#9CA3AF', fontSize: 11 }}
-                    />
-                    <YAxis tick={{ fill: '#9CA3AF' }} label={{ value: 'Risk Score', angle: -90, position: 'insideLeft', fill: '#9CA3AF' }} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#1F2937',
-                        border: '1px solid #374151',
-                        borderRadius: '0.5rem',
-                        color: '#F3F4F6'
-                      }}
-                    />
-                    <Bar dataKey="risk_score" radius={[8, 8, 0, 0]}>
-                      {predictiveData.slice(0, 10).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={getRiskColor(entry.risk_category).bar} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          ) : (
-            /* Table View */
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <table className="w-full text-xs sm:text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-900 border-y border-gray-200 dark:border-gray-700">
+          {/* Procedures Table */}
+          <div className="mb-8">
+            <h3 className="text-lg font-bold text-[#1c2b40] mb-4 flex items-center gap-2">
+              <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
+              Detailed Risk Analysis
+            </h3>
+            <div className="overflow-x-auto rounded-xl border-2 border-gray-200 shadow-lg">
+              <table className="w-full text-sm">
+                <thead className="bg-gradient-to-r from-[#1c2b40] to-[#2d3e54]">
                   <tr>
-                    <th className="px-2 sm:px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300">
+                    <th className="px-4 py-4 text-left font-bold text-white">
                       Procedure
                     </th>
-                    <th className="px-2 sm:px-4 py-3 text-center font-semibold text-gray-700 dark:text-gray-300">
+                    <th className="px-4 py-4 text-center font-bold text-white">
                       Risk Score
                     </th>
-                    <th className="px-2 sm:px-4 py-3 text-center font-semibold text-gray-700 dark:text-gray-300 hidden sm:table-cell">
+                    <th className="px-4 py-4 text-center font-bold text-white hidden sm:table-cell">
                       Category
                     </th>
-                    <th className="px-2 sm:px-4 py-3 text-center font-semibold text-gray-700 dark:text-gray-300 hidden md:table-cell">
+                    <th className="px-4 py-4 text-center font-bold text-white hidden md:table-cell">
                       Compliance
                     </th>
-                    <th className="px-2 sm:px-4 py-3 text-center font-semibold text-gray-700 dark:text-gray-300 hidden lg:table-cell">
+                    <th className="px-4 py-4 text-center font-bold text-white hidden lg:table-cell">
                       Incidents
                     </th>
-                    <th className="px-2 sm:px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300 hidden xl:table-cell">
+                    <th className="px-4 py-4 text-left font-bold text-white hidden xl:table-cell">
                       Recommendation
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="divide-y divide-gray-200 bg-white">
                   {predictiveData.map((item) => {
                     const colors = getRiskColor(item.risk_category);
                     return (
                       <tr
                         key={item.procedure_id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+                        className="hover:bg-gray-50 transition-colors"
                       >
                         {/* Procedure Name */}
-                        <td className="px-2 sm:px-4 py-3">
-                          <div className="font-medium text-gray-900 dark:text-white">
+                        <td className="px-4 py-4">
+                          <div className="font-bold text-[#1c2b40]">
                             {item.name}
                           </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                          <div className="text-xs text-gray-600 font-medium">
                             {item.category}
                           </div>
                         </td>
 
                         {/* Risk Score */}
-                        <td className="px-2 sm:px-4 py-3">
-                          <div className="flex flex-col items-center gap-1">
-                            <div className="text-lg font-bold" style={{ color: colors.bar }}>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="text-xl font-bold" style={{ color: colors.bar }}>
                               {item.risk_score}
                             </div>
-                            <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div className="w-20 h-2.5 bg-gray-200 rounded-full overflow-hidden shadow-inner">
                               <div
-                                className="h-full"
+                                className="h-full rounded-full"
                                 style={{
                                   width: `${item.risk_score}%`,
                                   backgroundColor: colors.bar
@@ -258,29 +223,29 @@ export function PredictiveAnalytics({ dateRange }: PredictiveAnalyticsProps) {
                         </td>
 
                         {/* Risk Category (hidden on mobile) */}
-                        <td className="px-2 sm:px-4 py-3 text-center hidden sm:table-cell">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${colors.bg} ${colors.text} border ${colors.border}`}>
+                        <td className="px-4 py-4 text-center hidden sm:table-cell">
+                          <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold ${colors.bg} ${colors.text} border-2 ${colors.border} shadow-sm`}>
                             {getRiskIcon(item.risk_category)} {item.risk_category}
                           </span>
                         </td>
 
                         {/* Compliance Rate */}
-                        <td className="px-2 sm:px-4 py-3 text-center hidden md:table-cell">
-                          <div className="font-medium text-gray-900 dark:text-white">
+                        <td className="px-4 py-4 text-center hidden md:table-cell">
+                          <div className="font-bold text-[#1c2b40] text-base">
                             {item.compliance_rate}%
                           </div>
                         </td>
 
                         {/* Incident Rate */}
-                        <td className="px-2 sm:px-4 py-3 text-center hidden lg:table-cell">
-                          <div className="font-medium text-gray-900 dark:text-white">
+                        <td className="px-4 py-4 text-center hidden lg:table-cell">
+                          <div className="font-bold text-[#1c2b40] text-base">
                             {item.incident_rate}%
                           </div>
                         </td>
 
                         {/* Recommendation */}
-                        <td className="px-2 sm:px-4 py-3 hidden xl:table-cell">
-                          <div className="text-xs text-gray-600 dark:text-gray-400 max-w-xs">
+                        <td className="px-4 py-4 hidden xl:table-cell">
+                          <div className="text-xs text-gray-700 max-w-xs font-medium">
                             {item.recommendation}
                           </div>
                         </td>
@@ -290,16 +255,17 @@ export function PredictiveAnalytics({ dateRange }: PredictiveAnalyticsProps) {
                 </tbody>
               </table>
             </div>
-          )}
+          </div>
 
           {/* Risk Methodology */}
-          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border-l-4 border-[#ff0000] shadow-lg">
+            <h4 className="text-base font-bold text-[#1c2b40] mb-3 flex items-center gap-2">
+              <span className="text-lg">ℹ️</span>
               Risk Score Methodology
             </h4>
-            <p className="text-xs text-blue-800 dark:text-blue-200">
-              Risk scores are calculated using a weighted algorithm: 40% compliance rate, 30% incident rate,
-              20% quality scores, and 10% rework frequency. Scores range from 0-100, with higher scores indicating greater risk.
+            <p className="text-sm text-gray-700 leading-relaxed font-medium">
+              Risk scores are calculated using a weighted algorithm: <span className="text-[#ff0000] font-bold">40% compliance rate</span>, <span className="text-[#ff0000] font-bold">30% incident rate</span>,
+              <span className="text-[#ff0000] font-bold"> 20% quality scores</span>, and <span className="text-[#ff0000] font-bold">10% rework frequency</span>. Scores range from 0-100, with higher scores indicating greater risk.
             </p>
           </div>
         </>

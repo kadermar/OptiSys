@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Camera, ChevronDown, Check, AlertCircle, Upload, X, CheckCircle } from 'lucide-react';
+import { Camera, ChevronDown, Check, AlertCircle, Upload, X, CheckCircle, FileText } from 'lucide-react';
 
 export function MobileWorkOrder() {
   const [selectedProcedure, setSelectedProcedure] = useState('');
@@ -17,6 +17,8 @@ export function MobileWorkOrder() {
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [hasIncident, setHasIncident] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [showProcedureModal, setShowProcedureModal] = useState(false);
+  const [procedureDetails, setProcedureDetails] = useState<any>(null);
 
   // Auto-hide toast after 5 seconds
   useEffect(() => {
@@ -115,6 +117,21 @@ export function MobileWorkOrder() {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleViewProcedure = async () => {
+    if (!selectedProcedure) return;
+
+    try {
+      const response = await fetch(`/api/procedures/${selectedProcedure}`);
+      if (response.ok) {
+        const data = await response.json();
+        setProcedureDetails(data);
+        setShowProcedureModal(true);
+      }
+    } catch (error) {
+      console.error('Error fetching procedure details:', error);
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       // Calculate compliance: all steps must be completed
@@ -125,6 +142,23 @@ export function MobileWorkOrder() {
       // Calculate quality score (0-10 scale) based on completion percentage
       const completionPercentage = totalSteps > 0 ? completedCount / totalSteps : 0;
       const qualityScore = completionPercentage * 10;
+
+      // Fetch procedure details to get average duration
+      let durationHours = 0;
+      try {
+        const procedureResponse = await fetch(`/api/procedures/${selectedProcedure}`);
+        if (procedureResponse.ok) {
+          const procedureData = await procedureResponse.json();
+          const avgDurationMinutes = procedureData.avg_duration_minutes || 0;
+
+          // Generate random duration: avg ± 50 minutes
+          const variance = (Math.random() * 100) - 50; // Random between -50 and +50
+          const actualDurationMinutes = Math.max(1, avgDurationMinutes + variance);
+          durationHours = actualDurationMinutes / 60;
+        }
+      } catch (error) {
+        console.error('Error fetching procedure duration:', error);
+      }
 
       const response = await fetch('/api/dashboard/work-orders', {
         method: 'POST',
@@ -140,6 +174,7 @@ export function MobileWorkOrder() {
           hasIncident: hasIncident,
           isCompliant: isCompliant,
           qualityScore: qualityScore,
+          durationHours: durationHours,
         }),
       });
 
@@ -177,7 +212,7 @@ export function MobileWorkOrder() {
     <div className="h-full bg-gray-50 flex flex-col relative">
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4 animate-in slide-in-from-top duration-300 ${
+        <div className={`absolute top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-[90%] w-full animate-in slide-in-from-top duration-300 ${
           toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
         } text-white px-6 py-4 rounded-lg shadow-2xl flex items-start gap-3`}>
           <div className="flex-shrink-0 mt-0.5">
@@ -213,7 +248,28 @@ export function MobileWorkOrder() {
       </div>
 
       {/* Form Content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-6 space-y-6">
+        {/* Worker Assignment */}
+        <div>
+          <label className="block text-sm font-semibold text-[#1c2b40] mb-2">
+            Assigned Worker *
+          </label>
+          <div className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-[#1c2b40] font-medium">
+            {loading ? 'Loading...' : workers.find(w => w.worker_id === selectedWorker)?.worker_name || 'Assigning worker...'}
+          </div>
+        </div>
+
+        {/* Facility Assignment */}
+        <div>
+          <label className="block text-sm font-semibold text-[#1c2b40] mb-2">
+            Assigned Facility *
+          </label>
+          <div className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-[#1c2b40] font-medium">
+            {loading ? 'Loading...' : facilities.find(f => f.facility_id === selectedFacility)?.name || 'Assigning facility...'}
+          </div>
+        </div>
+
         {/* Procedure Selection */}
         <div>
           <label className="block text-sm font-semibold text-[#1c2b40] mb-2">
@@ -237,37 +293,32 @@ export function MobileWorkOrder() {
           </div>
         </div>
 
-        {/* Facility Assignment */}
+        {/* Procedure Steps Checklist - Always visible */}
         <div>
-          <label className="block text-sm font-semibold text-[#1c2b40] mb-2">
-            Assigned Facility *
-          </label>
-          <div className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-[#1c2b40] font-medium">
-            {loading ? 'Loading...' : facilities.find(f => f.facility_id === selectedFacility)?.name || 'Assigning facility...'}
-          </div>
-        </div>
-
-        {/* Worker Assignment */}
-        <div>
-          <label className="block text-sm font-semibold text-[#1c2b40] mb-2">
-            Assigned Worker *
-          </label>
-          <div className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-[#1c2b40] font-medium">
-            {loading ? 'Loading...' : workers.find(w => w.worker_id === selectedWorker)?.worker_name || 'Assigning worker...'}
-          </div>
-        </div>
-
-        {/* Procedure Steps Checklist */}
-        {selectedProcedure && (
-          <div>
-            <label className="block text-sm font-semibold text-[#1c2b40] mb-2">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-semibold text-[#1c2b40]">
               Procedure Steps
             </label>
-            {procedureSteps.length === 0 ? (
-              <div className="w-full px-4 py-6 bg-gray-50 border-2 border-gray-300 rounded-lg text-center text-gray-500">
-                No steps available for this procedure
-              </div>
-            ) : (
+            {selectedProcedure && (
+              <button
+                onClick={handleViewProcedure}
+                className="text-xs font-semibold text-[#ff0000] hover:text-[#cc0000] transition-colors flex items-center gap-1"
+              >
+                <FileText className="w-3 h-3" />
+                View More →
+              </button>
+            )}
+          </div>
+          {!selectedProcedure ? (
+            <div className="w-full px-4 py-6 bg-gray-50 border-2 border-gray-300 rounded-lg text-center text-gray-500">
+              Please select a procedure to view steps
+            </div>
+          ) : procedureSteps.length === 0 ? (
+            <div className="w-full px-4 py-6 bg-gray-50 border-2 border-gray-300 rounded-lg text-center text-gray-500">
+              No steps available for this procedure
+            </div>
+          ) : (
+            <>
               <div className="bg-white border-2 border-gray-300 rounded-lg divide-y divide-gray-200 max-h-64 overflow-y-auto">
                 {procedureSteps.map((step) => (
                   <label
@@ -292,7 +343,7 @@ export function MobileWorkOrder() {
                         )}
                         {step.verification_required && (
                           <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">
-                            Verify
+                            Important
                           </span>
                         )}
                       </div>
@@ -303,14 +354,12 @@ export function MobileWorkOrder() {
                   </label>
                 ))}
               </div>
-            )}
-            {procedureSteps.length > 0 && (
               <div className="mt-2 text-xs text-gray-600">
                 {completedSteps.size} of {procedureSteps.length} steps completed
               </div>
-            )}
-          </div>
-        )}
+            </>
+          )}
+        </div>
 
         {/* Media Upload */}
         <div>
@@ -399,6 +448,23 @@ export function MobileWorkOrder() {
           </p>
         </div>
 
+        {/* Comments/Notes */}
+        <div>
+          <label className="block text-sm font-semibold text-[#1c2b40] mb-2">
+            Comments
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add any additional notes or observations..."
+            rows={4}
+            className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg focus:border-[#ff0000] focus:outline-none text-[#1c2b40] resize-none"
+          />
+          <p className="text-xs text-gray-600 mt-2">
+            Optional notes about the work performed, observations, or recommendations
+          </p>
+        </div>
+
         {/* Compliance & Quality Summary */}
         {selectedProcedure && procedureSteps.length > 0 && (
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-4">
@@ -444,10 +510,9 @@ export function MobileWorkOrder() {
             </div>
           </div>
         )}
-      </div>
 
-      {/* Footer Actions */}
-      <div className="bg-white border-t-2 border-gray-200 px-6 py-4 space-y-3">
+        {/* Footer Actions */}
+        <div className="bg-white border-t-2 border-gray-200 px-6 py-6 space-y-3">
         <button
           onClick={handleSubmit}
           disabled={!selectedProcedure || !selectedFacility || !selectedWorker}
@@ -463,7 +528,126 @@ export function MobileWorkOrder() {
         <button className="w-full py-3 rounded-lg font-semibold text-gray-600 hover:bg-gray-100 transition-all">
           Save as Draft
         </button>
+        </div>
+        </div>
       </div>
+
+      {/* Procedure Details Modal */}
+      {showProcedureModal && procedureDetails && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-3 z-50">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-md h-[calc(100%-6rem)] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="bg-[#ff0000] text-white px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                <div>
+                  <h2 className="text-lg font-bold">{procedureDetails.name}</h2>
+                  <p className="text-xs text-white/80">{procedureDetails.procedure_id}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowProcedureModal(false)}
+                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {/* Procedure Info */}
+              <div className="mb-4">
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="bg-gray-50 rounded-lg p-2">
+                    <div className="text-xs text-gray-600 mb-0.5">Category</div>
+                    <div className="text-xs font-semibold text-[#1c2b40]">{procedureDetails.category}</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-2">
+                    <div className="text-xs text-gray-600 mb-0.5">Safety Critical</div>
+                    <div className="text-xs font-semibold text-[#1c2b40]">
+                      {procedureDetails.safety_critical ? 'Yes' : 'No'}
+                    </div>
+                  </div>
+                </div>
+                {procedureDetails.description && (
+                  <div className="bg-blue-50 border-l-4 border-blue-500 p-2 rounded">
+                    <div className="text-xs text-blue-700 font-semibold mb-0.5">Description</div>
+                    <p className="text-xs text-blue-900">{procedureDetails.description}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Procedure Steps */}
+              {procedureDetails.steps && procedureDetails.steps.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-bold text-[#1c2b40] mb-3">
+                    Procedure Steps ({procedureDetails.steps.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {procedureDetails.steps.map((step: any) => (
+                      <div
+                        key={step.step_id}
+                        className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-3"
+                      >
+                        <div className="flex items-start gap-2">
+                          <div className="flex-shrink-0 w-7 h-7 bg-[#ff0000] text-white rounded-full flex items-center justify-center text-xs font-bold">
+                            {step.step_number}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-[#1c2b40] leading-relaxed mb-1.5">
+                              {step.description}
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {step.criticality && (
+                                <span
+                                  className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                                    step.criticality === 'high'
+                                      ? 'bg-red-100 text-red-700'
+                                      : step.criticality === 'medium'
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : 'bg-green-100 text-green-700'
+                                  }`}
+                                >
+                                  {step.criticality}
+                                </span>
+                              )}
+                              {step.expected_duration_minutes && (
+                                <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                                  ~{step.expected_duration_minutes}m
+                                </span>
+                              )}
+                            </div>
+                            {step.safety_requirements && (
+                              <div className="mt-2 pt-2 border-t border-gray-200">
+                                <div className="text-xs text-gray-600 mb-0.5 font-semibold">
+                                  Safety Requirements
+                                </div>
+                                <div className="text-xs text-gray-700 bg-yellow-50 p-1.5 rounded">
+                                  {step.safety_requirements}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="border-t border-gray-200 px-4 py-3">
+              <button
+                onClick={() => setShowProcedureModal(false)}
+                className="w-full py-2.5 bg-gray-200 hover:bg-gray-300 text-[#1c2b40] font-semibold rounded-lg transition-colors text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

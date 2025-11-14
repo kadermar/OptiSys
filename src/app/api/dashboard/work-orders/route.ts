@@ -13,6 +13,7 @@ export async function POST(request: Request) {
       hasIncident, // Boolean indicating if there was an incident
       isCompliant, // Boolean indicating if all steps were completed
       qualityScore, // Calculated quality score based on completion
+      durationHours, // Duration of the work order in hours
     } = body;
 
     if (!procedure_id || !facility_id || !worker_id) {
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
         CURRENT_DATE,
         ${isCompliant},
         ${qualityScore},
-        0,
+        ${durationHours || 0},
         0,
         ${hasIncident},
         ${!isCompliant},
@@ -170,11 +171,9 @@ export async function GET(request: Request) {
         LEFT JOIN workers w ON wo.worker_id = w.worker_id
         LEFT JOIN facilities f ON wo.facility_id = f.facility_id
         LEFT JOIN procedures p ON wo.procedure_id = p.procedure_id
-        WHERE (wo.safety_incident = true OR wo.rework_required = true)
-          AND wo.scheduled_date >= ${startDate}::date
+        WHERE wo.scheduled_date >= ${startDate}::date
           AND wo.scheduled_date <= ${endDate}::date
         ORDER BY wo.scheduled_date DESC
-        LIMIT 50
       `;
     }
 

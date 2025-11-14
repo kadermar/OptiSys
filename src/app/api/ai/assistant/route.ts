@@ -39,15 +39,19 @@ export async function POST(request: Request) {
 
     // Prepare context from dashboard data
     const context = `
-You are a knowledge base assistant for an operations management system. Your role is to provide accurate, factual information directly from procedure documents and operational data.
+You are Opti, an expert operations intelligence assistant for OptiSys - an advanced operations management platform. Your role is to provide comprehensive, insightful analysis of operational data, procedures, and performance metrics.
 
 IMPORTANT INSTRUCTIONS:
-- Answer questions with factual information from the procedures and data
-- When asked about procedures, cite specific steps and requirements from the procedure documents
-- Do NOT provide process improvement suggestions unless explicitly asked
-- Do NOT give recommendations or insights unless requested
-- Focus on answering "what", "how", and "when" questions with facts from the documentation
-- If asked about procedure steps, list them clearly with their descriptions
+- Provide detailed, thorough answers that fully address the user's question
+- When analyzing data, include relevant metrics, trends, and statistical insights
+- Explain the significance of findings and what they mean for operational performance
+- When asked about procedures, provide complete step-by-step breakdowns with context about criticality and safety requirements
+- Offer actionable insights and recommendations based on the data patterns you observe
+- Use clear formatting with bullet points, numbered lists, and sections when appropriate
+- Be conversational yet professional - explain concepts clearly as if speaking to an operations manager
+- Highlight both positive trends and areas of concern
+- Connect related information to provide holistic understanding
+- Include specific numbers and percentages to support your analysis
 
 ALL PROCEDURES (sorted by total incidents):
 ${dashboardData.procedures?.sort((a: any, b: any) => (b.total_incidents || 0) - (a.total_incidents || 0)).map((p: any) => {
@@ -79,7 +83,7 @@ ${dashboardData.workers?.slice(0, 10).map((w: any) =>
   `- ${w.worker_name} (${w.experience_level}): ${w.compliance_rate}% compliance, ${w.incident_count} incidents`
 ).join('\n')}
 
-Answer the user's question using the factual information above. Be direct and specific.
+Analyze the data comprehensively and provide a detailed, insightful response to the user's question. Include relevant context, trends, and actionable recommendations.
 `;
 
     // Call OpenAI API for the main answer
@@ -95,8 +99,8 @@ Answer the user's question using the factual information above. Be direct and sp
           content: question,
         },
       ],
-      max_tokens: 2048,
-      temperature: 0.3,
+      max_tokens: 4096,
+      temperature: 0.7,
     });
 
     // Extract the text response
@@ -132,7 +136,7 @@ Answer the user's question using the factual information above. Be direct and sp
 
     // Filter relevant procedures and fetch their full details
     const relevantProcedures = dashboardData.procedures?.filter((p: any) =>
-      relevantSourceNames.procedures.some((name: string) =>
+      (relevantSourceNames.procedures || []).some((name: string) =>
         p.name.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(p.name.toLowerCase())
       )
     ) || [];
@@ -182,7 +186,7 @@ Answer the user's question using the factual information above. Be direct and sp
     const sources = {
       procedures: proceduresWithDetails,
       facilities: dashboardData.facilities?.filter((f: any) =>
-        relevantSourceNames.facilities.some((name: string) =>
+        (relevantSourceNames.facilities || []).some((name: string) =>
           f.name.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(f.name.toLowerCase())
         )
       ).map((f: any) => ({
@@ -196,7 +200,7 @@ Answer the user's question using the factual information above. Be direct and sp
         metrics: `${f.compliance_rate}% compliance, ${f.performance_tier} tier`
       })) || [],
       workers: dashboardData.workers?.filter((w: any) =>
-        relevantSourceNames.workers.some((name: string) =>
+        (relevantSourceNames.workers || []).some((name: string) =>
           w.worker_name.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(w.worker_name.toLowerCase())
         )
       ).map((w: any) => ({

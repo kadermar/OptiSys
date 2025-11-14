@@ -21,28 +21,28 @@ export function OptiSysSidebar({ children }: { children: React.ReactNode }) {
       label: "Dashboard",
       href: "/",
       icon: (
-        <LayoutDashboard className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+        <LayoutDashboard className="text-white h-5 w-5 flex-shrink-0" />
       ),
     },
     {
       label: "Knowledge Base",
       href: "/knowledge-base",
       icon: (
-        <Database className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+        <Database className="text-white h-5 w-5 flex-shrink-0" />
       ),
     },
     {
       label: "AI Assistant",
       href: "/chat",
       icon: (
-        <MessageSquare className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+        <MessageSquare className="text-white h-5 w-5 flex-shrink-0" />
       ),
     },
     {
       label: "Field Experience",
       href: "/field-experience",
       icon: (
-        <Smartphone className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+        <Smartphone className="text-white h-5 w-5 flex-shrink-0" />
       ),
     },
   ];
@@ -67,15 +67,10 @@ export function OptiSysSidebar({ children }: { children: React.ReactNode }) {
                 label: "Settings",
                 href: "#",
                 icon: (
-                  <Settings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+                  <Settings className="text-white h-5 w-5 flex-shrink-0" />
                 ),
               }}
             />
-            {open && (
-              <div className="px-2">
-                <ThemeToggle />
-              </div>
-            )}
           </div>
         </SidebarBody>
       </Sidebar>
@@ -90,13 +85,13 @@ export const Logo = () => {
   return (
     <Link
       href="/"
-      className="font-normal flex space-x-2 items-center text-sm text-black py-1 relative z-20"
+      className="font-normal flex space-x-2 items-center text-sm py-1 relative z-20"
     >
       <div className="h-5 w-6 bg-[#ff0000] rounded-br-lg rounded-tr-sm rounded-tl-lg rounded-bl-sm flex-shrink-0" />
       <motion.span
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="font-bold text-[#1c2b40] whitespace-pre text-lg"
+        className="font-bold text-white whitespace-pre text-lg"
       >
         OptiSys
       </motion.span>

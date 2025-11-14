@@ -13,54 +13,63 @@ interface InsightCardProps {
 
 function InsightCard({ type, title, metric, compliance, impact, recommendation, impactStars, procedureId }: InsightCardProps) {
   const bgColors = {
-    success: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700',
-    risk: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700',
-    underperforming: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700',
-    opportunity: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700',
+    success: 'bg-gradient-to-br from-green-50 to-green-100 border-green-300 shadow-green-100',
+    risk: 'bg-gradient-to-br from-red-50 to-red-100 border-red-300 shadow-red-100',
+    underperforming: 'bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-300 shadow-yellow-100',
+    opportunity: 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300 shadow-blue-100',
   };
 
   const badgeColors = {
-    success: 'bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100',
-    risk: 'bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-100',
-    underperforming: 'bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-100',
-    opportunity: 'bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100',
+    success: 'bg-green-500 text-white shadow-lg',
+    risk: 'bg-red-500 text-white shadow-lg',
+    underperforming: 'bg-yellow-500 text-white shadow-lg',
+    opportunity: 'bg-blue-500 text-white shadow-lg',
   };
 
   const icons = {
-    success: '🟢',
-    risk: '🔴',
-    underperforming: '🟡',
-    opportunity: '🔵',
+    success: '✓',
+    risk: '!',
+    underperforming: '⚠',
+    opportunity: '★',
+  };
+
+  const iconBg = {
+    success: 'bg-green-500',
+    risk: 'bg-red-500',
+    underperforming: 'bg-yellow-500',
+    opportunity: 'bg-blue-500',
   };
 
   return (
     <Link
       href={`/procedures?selected=${procedureId}`}
-      className={`${bgColors[type]} border-2 rounded-lg p-6 h-full block hover:shadow-xl transition-all duration-200 hover:scale-[1.02] cursor-pointer`}
+      className={`${bgColors[type]} border-2 rounded-lg p-4 h-full block hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-md`}
     >
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-2xl">{icons[type]}</span>
-        <span className={`${badgeColors[type]} px-3 py-1 rounded-full text-xs font-semibold`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className={`${iconBg[type]} w-8 h-8 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-lg`}>
+          {icons[type]}
+        </div>
+        <span className={`${badgeColors[type]} px-2 py-0.5 rounded-full text-xs font-bold tracking-wide`}>
           {type.toUpperCase()}
         </span>
       </div>
-      <h3 className="text-lg font-bold mb-4 dark:text-white">{title}</h3>
+      <h3 className="text-base font-bold mb-3 text-[#1c2b40]">{title}</h3>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div>
-          <p className="text-2xl font-bold dark:text-white">{metric}</p>
+          <p className="text-lg font-bold text-[#1c2b40]">{metric}</p>
         </div>
 
-        <div className="space-y-2 text-sm">
+        <div className="space-y-2 text-xs">
           <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">Compliance:</span>
-            <span className="font-semibold dark:text-white">{compliance}</span>
+            <span className="text-gray-700 font-medium">Compliance:</span>
+            <span className="font-bold text-[#1c2b40]">{compliance}</span>
           </div>
           <div>
-            <span className="text-gray-600 dark:text-gray-400">Impact:</span>
-            <div className="flex items-center gap-1 mt-1">
+            <span className="text-gray-700 font-medium">Impact:</span>
+            <div className="flex items-center gap-0.5 mt-1">
               {Array.from({ length: 5 }).map((_, i) => (
-                <span key={i} className={i < impactStars ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}>
+                <span key={i} className={i < impactStars ? 'text-[#ff0000] drop-shadow text-sm' : 'text-gray-300 text-sm'}>
                   ★
                 </span>
               ))}
@@ -68,13 +77,13 @@ function InsightCard({ type, title, metric, compliance, impact, recommendation, 
           </div>
         </div>
 
-        <div className="pt-2 border-t dark:border-gray-600">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{impact}</p>
+        <div className="pt-2 border-t-2 border-gray-300">
+          <p className="text-xs font-semibold text-gray-800">{impact}</p>
         </div>
 
-        <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-md">
-          <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">RECOMMENDATION</p>
-          <p className="text-sm dark:text-gray-300">{recommendation}</p>
+        <div className="bg-white/80 backdrop-blur p-2 rounded-lg border border-gray-200 shadow-inner">
+          <p className="text-xs font-bold text-[#ff0000] mb-1">RECOMMENDATION</p>
+          <p className="text-xs font-medium text-gray-800">{recommendation}</p>
         </div>
       </div>
     </Link>
@@ -83,32 +92,68 @@ function InsightCard({ type, title, metric, compliance, impact, recommendation, 
 
 interface ExecutiveSummaryProps {
   procedureData: any[];
+  workerData: any[];
 }
 
-export function ExecutiveSummary({ procedureData }: ExecutiveSummaryProps) {
+export function ExecutiveSummary({ procedureData, workerData }: ExecutiveSummaryProps) {
   // Extract key insights from procedure data
   const lotoData = procedureData.find((p: any) => p.procedure_id === 'SAF-002') || procedureData[0];
   const corrosionData = procedureData.find((p: any) => p.procedure_id === 'INT-031') || procedureData[1];
   const pumpData = procedureData.find((p: any) => p.procedure_id === 'MNT-202') || procedureData[2];
   const compressorData = procedureData.find((p: any) => p.procedure_id === 'OPS-004') || procedureData[3];
 
+  // Worker performance data
+  const experienceStats = workerData.reduce((acc: any, worker) => {
+    const level = worker.experience_level;
+    if (!acc[level]) {
+      acc[level] = {
+        level,
+        workers: [],
+        avgCompliance: 0,
+        avgQuality: 0,
+        totalIncidents: 0,
+        totalRework: 0,
+      };
+    }
+    acc[level].workers.push(worker);
+    return acc;
+  }, {});
+
+  const experienceLevelData = Object.values(experienceStats).map((stat: any) => {
+    const workers = stat.workers;
+    return {
+      level: stat.level,
+      avgCompliance: (workers.reduce((sum: number, w: any) => sum + parseFloat(w.compliance_rate.toString()), 0) / workers.length).toFixed(1),
+      avgQuality: (workers.reduce((sum: number, w: any) => sum + parseFloat(w.avg_quality_score.toString()), 0) / workers.length).toFixed(1),
+      totalIncidents: workers.reduce((sum: number, w: any) => sum + w.incident_count, 0),
+      totalRework: workers.reduce((sum: number, w: any) => sum + w.rework_count, 0),
+      workerCount: workers.length,
+    };
+  });
+
+  const needsSupport = [...workerData]
+    .sort((a, b) => parseFloat(a.compliance_rate.toString()) - parseFloat(b.compliance_rate.toString()))
+    .filter(w => parseFloat(w.compliance_rate.toString()) < 80)
+    .slice(0, 5);
+
   return (
     <div className="space-y-4">
-      {/* View All Procedures Button */}
-      <div className="flex justify-end">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-xl font-bold text-[#1c2b40]">Key Insights & Recommendations</h2>
         <Link
           href="/procedures"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#ff0000] hover:bg-[#cc0000] text-white text-xs font-bold transition-all shadow-lg hover:shadow-xl hover:scale-105"
         >
-          View All Procedures
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          View All
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </Link>
       </div>
 
       {/* Insight Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="space-y-4">
         {lotoData && (
           <InsightCard
             type="success"
@@ -160,6 +205,48 @@ export function ExecutiveSummary({ procedureData }: ExecutiveSummaryProps) {
             procedureId={compressorData.procedure_id}
           />
         )}
+      </div>
+
+      {/* Recommendations Section */}
+      <div className="mt-6 pt-6 border-t-2 border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-[#1c2b40] flex items-center gap-2">
+            <div className="w-6 h-6 bg-[#ff0000] rounded-full flex items-center justify-center text-white text-sm shadow-lg">
+              💡
+            </div>
+            Action Items
+          </h3>
+          <Link
+            href="/workers"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#1c2b40] hover:bg-[#2d3e54] text-white text-xs font-bold transition-all shadow-lg hover:shadow-xl hover:scale-105"
+          >
+            View More
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        </div>
+        <div className="space-y-3">
+          <div className="bg-white/80 backdrop-blur rounded-lg p-3 border-l-4 border-green-500 shadow-md">
+            <p className="text-xs font-medium text-gray-800">
+              <strong className="text-[#1c2b40] text-sm">Experience Correlation:</strong>{' '}
+              <span className="text-gray-700">{experienceLevelData[0]?.level} workers show{' '}
+              <span className="text-[#ff0000] font-bold">{experienceLevelData[0]?.avgCompliance}%</span> compliance</span>
+            </p>
+          </div>
+          <div className="bg-white/80 backdrop-blur rounded-lg p-3 border-l-4 border-yellow-500 shadow-md">
+            <p className="text-xs font-medium text-gray-800">
+              <strong className="text-[#1c2b40] text-sm">Training Impact:</strong>{' '}
+              <span className="text-gray-700">Focus on <span className="text-[#ff0000] font-bold">{needsSupport.length} workers</span> below 80%</span>
+            </p>
+          </div>
+          <div className="bg-white/80 backdrop-blur rounded-lg p-3 border-l-4 border-blue-500 shadow-md">
+            <p className="text-xs font-medium text-gray-800">
+              <strong className="text-[#1c2b40] text-sm">Best Practice Sharing:</strong>{' '}
+              <span className="text-gray-700">Connect top performers for peer learning</span>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

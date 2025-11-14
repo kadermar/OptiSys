@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { InteractiveMenu } from './modern-mobile-menu';
 
 interface TabletFrameProps {
   children: ReactNode;
@@ -44,14 +45,13 @@ export function TabletFrame({ children }: TabletFrameProps) {
             </div>
 
             {/* App Content */}
-            <div className="h-[calc(100%-40px)] overflow-y-auto bg-gray-50">
-              {children}
+            <div className="flex flex-col h-[calc(100%-40px)]">
+              <div className="flex-1 overflow-y-auto bg-gray-50">
+                {children}
+              </div>
+              {/* Bottom Navigation Menu */}
+              <InteractiveMenu accentColor="#ff0000" />
             </div>
-          </div>
-
-          {/* Home Button */}
-          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-            <div className="w-12 h-12 rounded-full border-2 border-[#ffffff]/20"></div>
           </div>
         </div>
       </div>

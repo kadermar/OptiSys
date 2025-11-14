@@ -77,44 +77,48 @@ export function WorkerPerformanceDetailed({ workerData }: WorkerPerformanceDetai
     .slice(0, 5);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold dark:text-white">Worker Performance Analysis</h2>
-        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Experience level vs compliance correlation & training needs</p>
-      </div>
-
+    <div className="space-y-6">
       {/* Experience Level Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        {experienceLevelData.map((level: any) => (
-          <div key={level.level} className="bg-white dark:bg-gray-700 border-2 dark:border-gray-600 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-lg dark:text-white">{level.level}</h3>
-              <span className="text-2xl font-bold text-gray-400 dark:text-gray-500">{level.workerCount}</span>
+      <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-[#ff0000]">
+        <h2 className="text-xl font-bold text-[#1c2b40] mb-4 flex items-center gap-2">
+          <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
+          Experience Level Analysis
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {experienceLevelData.map((level: any) => (
+            <div key={level.level} className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-lg text-[#1c2b40]">{level.level}</h3>
+                <span className="text-2xl font-bold text-gray-400">{level.workerCount}</span>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Avg Compliance:</span>
+                  <span className="font-bold text-[#1c2b40]">{level.avgCompliance}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Avg Quality:</span>
+                  <span className="font-bold text-[#1c2b40]">{level.avgQuality}/10</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Incidents:</span>
+                  <span className={`font-bold ${level.totalIncidents > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {level.totalIncidents}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Avg Compliance:</span>
-                <span className="font-semibold dark:text-white">{level.avgCompliance}%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Avg Quality:</span>
-                <span className="font-semibold dark:text-white">{level.avgQuality}/10</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Incidents:</span>
-                <span className={`font-semibold ${level.totalIncidents > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                  {level.totalIncidents}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Scatter Plot: Experience vs Compliance */}
-      <div className="bg-white dark:bg-gray-700 rounded-lg border dark:border-gray-600 p-4 sm:p-6">
-        <h3 className="text-lg sm:text-xl font-bold mb-2 dark:text-white">Worker Compliance Distribution by Experience</h3>
-        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4">Each point represents a worker - hover for details</p>
+      <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-[#ff0000]">
+        <h3 className="text-xl font-bold text-[#1c2b40] mb-2 flex items-center gap-2">
+          <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
+          Worker Compliance Distribution by Experience
+        </h3>
+        <p className="text-sm text-gray-600 mb-4 ml-4">Each point represents a worker - hover for details</p>
 
         <ResponsiveContainer width="100%" height={300} className="sm:hidden">
           <ScatterChart margin={{ top: 10, right: 10, bottom: 40, left: 40 }}>
@@ -142,12 +146,12 @@ export function WorkerPerformanceDetailed({ workerData }: WorkerPerformanceDetai
                 if (active && payload && payload.length) {
                   const data = payload[0].payload;
                   return (
-                    <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-600 rounded shadow-lg">
-                      <p className="font-semibold dark:text-white">{data.name}</p>
-                      <p className="text-sm dark:text-gray-300">Experience: {data.experience}</p>
-                      <p className="text-sm dark:text-gray-300">Compliance: {data.compliance}%</p>
-                      <p className="text-sm dark:text-gray-300">Quality: {data.quality}/10</p>
-                      <p className="text-sm dark:text-gray-300">Incidents: {data.incidents}</p>
+                    <div className="bg-white p-3 border-2 border-[#ff0000] rounded-lg shadow-xl">
+                      <p className="font-bold text-[#1c2b40]">{data.name}</p>
+                      <p className="text-sm text-gray-700">Experience: {data.experience}</p>
+                      <p className="text-sm text-gray-700">Compliance: {data.compliance}%</p>
+                      <p className="text-sm text-gray-700">Quality: {data.quality}/10</p>
+                      <p className="text-sm text-gray-700">Incidents: {data.incidents}</p>
                     </div>
                   );
                 }
@@ -189,12 +193,12 @@ export function WorkerPerformanceDetailed({ workerData }: WorkerPerformanceDetai
                 if (active && payload && payload.length) {
                   const data = payload[0].payload;
                   return (
-                    <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-600 rounded shadow-lg">
-                      <p className="font-semibold dark:text-white">{data.name}</p>
-                      <p className="text-sm dark:text-gray-300">Experience: {data.experience}</p>
-                      <p className="text-sm dark:text-gray-300">Compliance: {data.compliance}%</p>
-                      <p className="text-sm dark:text-gray-300">Quality: {data.quality}/10</p>
-                      <p className="text-sm dark:text-gray-300">Incidents: {data.incidents}</p>
+                    <div className="bg-white p-3 border-2 border-[#ff0000] rounded-lg shadow-xl">
+                      <p className="font-bold text-[#1c2b40]">{data.name}</p>
+                      <p className="text-sm text-gray-700">Experience: {data.experience}</p>
+                      <p className="text-sm text-gray-700">Compliance: {data.compliance}%</p>
+                      <p className="text-sm text-gray-700">Quality: {data.quality}/10</p>
+                      <p className="text-sm text-gray-700">Incidents: {data.incidents}</p>
                     </div>
                   );
                 }
@@ -216,23 +220,23 @@ export function WorkerPerformanceDetailed({ workerData }: WorkerPerformanceDetai
       {/* Top Performers & Needs Support */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Top Performers */}
-        <div className="bg-white dark:bg-gray-700 rounded-lg border dark:border-gray-600 p-6">
-          <h3 className="text-xl font-bold mb-4 flex items-center gap-2 dark:text-white">
-            <span className="text-green-600 dark:text-green-400">🏆</span> Top Performers
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-[#1c2b40]">
+            <span className="text-green-600">🏆</span> Top Performers
           </h3>
           <div className="space-y-3">
             {topPerformers.map((worker, index) => (
-              <div key={worker.worker_id} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <div key={worker.worker_id} className="flex items-center justify-between p-3 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 hover:shadow-md transition-shadow">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-700 dark:text-gray-300">#{index + 1}</span>
-                    <span className="font-semibold dark:text-white">{worker.worker_name}</span>
+                    <span className="font-bold text-gray-700">#{index + 1}</span>
+                    <span className="font-bold text-[#1c2b40]">{worker.worker_name}</span>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{worker.experience_level} - {worker.work_order_count} WOs</p>
+                  <p className="text-sm text-gray-600">{worker.experience_level} - {worker.work_order_count} WOs</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{worker.compliance_rate}%</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Quality: {worker.avg_quality_score}/10</p>
+                  <p className="text-2xl font-bold text-green-600">{worker.compliance_rate}%</p>
+                  <p className="text-xs text-gray-600">Quality: {worker.avg_quality_score}/10</p>
                 </div>
               </div>
             ))}
@@ -240,22 +244,22 @@ export function WorkerPerformanceDetailed({ workerData }: WorkerPerformanceDetai
         </div>
 
         {/* Needs Support */}
-        <div className="bg-white dark:bg-gray-700 rounded-lg border dark:border-gray-600 p-6">
-          <h3 className="text-xl font-bold mb-4 flex items-center gap-2 dark:text-white">
-            <span className="text-orange-600 dark:text-orange-400">📚</span> Training Opportunities
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-orange-500">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-[#1c2b40]">
+            <span className="text-orange-600">📚</span> Training Opportunities
           </h3>
           <div className="space-y-3">
             {needsSupport.map((worker, index) => (
-              <div key={worker.worker_id} className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+              <div key={worker.worker_id} className="flex items-center justify-between p-3 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border border-orange-200 hover:shadow-md transition-shadow">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold dark:text-white">{worker.worker_name}</span>
+                    <span className="font-bold text-[#1c2b40]">{worker.worker_name}</span>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{worker.experience_level} - {worker.work_order_count} WOs</p>
+                  <p className="text-sm text-gray-600">{worker.experience_level} - {worker.work_order_count} WOs</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{worker.compliance_rate}%</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                  <p className="text-2xl font-bold text-orange-600">{worker.compliance_rate}%</p>
+                  <p className="text-xs text-gray-600">
                     {worker.incident_count} incidents, {worker.rework_count} rework
                   </p>
                 </div>
@@ -266,21 +270,28 @@ export function WorkerPerformanceDetailed({ workerData }: WorkerPerformanceDetai
       </div>
 
       {/* Key Insights */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-6">
-        <h3 className="text-lg font-bold mb-3 flex items-center gap-2 dark:text-white">
+      <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-[#ff0000] rounded-xl p-6 shadow-lg">
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-[#1c2b40]">
+          <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
           <span>💡</span> Key Insights & Recommendations
         </h3>
-        <div className="space-y-2 text-sm dark:text-gray-300">
-          <p>
-            <strong className="dark:text-white">Experience Correlation:</strong> {experienceLevelData[0]?.level} workers show{' '}
-            {experienceLevelData[0]?.avgCompliance}% compliance on average
-          </p>
-          <p>
-            <strong className="dark:text-white">Training Impact:</strong> Focus mentorship on {needsSupport.length} workers with compliance below 80%
-          </p>
-          <p>
-            <strong className="dark:text-white">Best Practice Sharing:</strong> Connect top performers with teams needing support for peer learning
-          </p>
+        <div className="space-y-3">
+          <div className="bg-white/80 backdrop-blur rounded-lg p-4 border-l-4 border-green-500 shadow-md">
+            <p className="text-sm font-medium text-gray-800">
+              <strong className="text-[#1c2b40]">Experience Correlation:</strong> {experienceLevelData[0]?.level} workers show{' '}
+              <span className="text-[#ff0000] font-bold">{experienceLevelData[0]?.avgCompliance}%</span> compliance on average
+            </p>
+          </div>
+          <div className="bg-white/80 backdrop-blur rounded-lg p-4 border-l-4 border-yellow-500 shadow-md">
+            <p className="text-sm font-medium text-gray-800">
+              <strong className="text-[#1c2b40]">Training Impact:</strong> Focus mentorship on <span className="text-[#ff0000] font-bold">{needsSupport.length} workers</span> with compliance below 80%
+            </p>
+          </div>
+          <div className="bg-white/80 backdrop-blur rounded-lg p-4 border-l-4 border-blue-500 shadow-md">
+            <p className="text-sm font-medium text-gray-800">
+              <strong className="text-[#1c2b40]">Best Practice Sharing:</strong> Connect top performers with teams needing support for peer learning
+            </p>
+          </div>
         </div>
       </div>
     </div>

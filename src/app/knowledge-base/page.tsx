@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { KnowledgeBaseSkeleton } from '@/components/ui/KnowledgeBaseSkeleton';
 
 export default function KnowledgeBasePage() {
   const [procedures, setProcedures] = useState<any[]>([]);
@@ -20,7 +21,20 @@ export default function KnowledgeBasePage() {
   const [woIncidentFilter, setWoIncidentFilter] = useState<string>('all');
   const [woProcedureFilter, setWoProcedureFilter] = useState<string>('all');
   const [facilityTierFilter, setFacilityTierFilter] = useState<string>('all');
-  const [workerExperienceFilter, setWorkerExperienceFilter] = useState<string>('all');
+
+  // Sorting
+  const [procedureSortBy, setProcedureSortBy] = useState<string>('name');
+  const [procedureSortDir, setProcedureSortDir] = useState<'asc' | 'desc'>('asc');
+  const [woSortBy, setWoSortBy] = useState<string>('wo_id');
+  const [woSortDir, setWoSortDir] = useState<'asc' | 'desc'>('desc');
+  const [facilitySortBy, setFacilitySortBy] = useState<string>('name');
+  const [facilitySortDir, setFacilitySortDir] = useState<'asc' | 'desc'>('asc');
+  const [workerSortBy, setWorkerSortBy] = useState<string>('worker_name');
+  const [workerSortDir, setWorkerSortDir] = useState<'asc' | 'desc'>('asc');
+
+  // Pagination for work orders
+  const [woCurrentPage, setWoCurrentPage] = useState<number>(1);
+  const woItemsPerPage = 100;
 
   useEffect(() => {
     async function fetchData() {
@@ -51,15 +65,13 @@ export default function KnowledgeBasePage() {
     fetchData();
   }, []);
 
+  // Reset to page 1 when filters or sorting change
+  useEffect(() => {
+    setWoCurrentPage(1);
+  }, [woComplianceFilter, woIncidentFilter, woProcedureFilter, woSortBy, woSortDir]);
+
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff0000]"></div>
-          <p className="mt-4 text-[#1c2b40]">Loading knowledge base...</p>
-        </div>
-      </div>
-    );
+    return <KnowledgeBaseSkeleton />;
   }
 
   if (error) {
@@ -80,7 +92,6 @@ export default function KnowledgeBasePage() {
   // Get unique values for filters
   const platforms = Array.from(new Set(workers.map(w => w.platform).filter(Boolean)));
   const categories = Array.from(new Set(procedures.map(p => p.category).filter(Boolean)));
-  const experienceLevels = Array.from(new Set(workers.map(w => w.experience_level).filter(Boolean)));
   const performanceTiers = Array.from(new Set(facilities.map(f => f.performance_tier).filter(Boolean)));
 
   // Filter procedures
@@ -108,9 +119,54 @@ export default function KnowledgeBasePage() {
   // Filter workers
   const filteredWorkers = workers.filter(w => {
     if (selectedPlatform !== 'all' && w.platform !== selectedPlatform) return false;
-    if (workerExperienceFilter !== 'all' && w.experience_level !== workerExperienceFilter) return false;
     return true;
   });
+
+  // Sort helper function
+  const sortData = (data: any[], sortBy: string, sortDir: 'asc' | 'desc') => {
+    return [...data].sort((a, b) => {
+      let aVal = a[sortBy];
+      let bVal = b[sortBy];
+
+      // Handle numeric values
+      if (typeof aVal === 'string' && !isNaN(parseFloat(aVal))) {
+        aVal = parseFloat(aVal);
+        bVal = parseFloat(bVal);
+      }
+
+      if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  // Handle column header click for sorting
+  const handleSort = (column: string, currentSort: string, currentDir: 'asc' | 'desc', setSort: Function, setDir: Function) => {
+    if (currentSort === column) {
+      setDir(currentDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSort(column);
+      setDir('asc');
+    }
+  };
+
+  // Apply sorting to filtered data
+  const sortedProcedures = sortData(filteredProcedures, procedureSortBy, procedureSortDir);
+  const sortedWorkOrders = sortData(filteredWorkOrders, woSortBy, woSortDir);
+  const sortedFacilities = sortData(filteredFacilities, facilitySortBy, facilitySortDir);
+  const sortedWorkers = sortData(filteredWorkers, workerSortBy, workerSortDir);
+
+  // Pagination calculations for work orders
+  const woTotalPages = Math.ceil(sortedWorkOrders.length / woItemsPerPage);
+  const woStartIndex = (woCurrentPage - 1) * woItemsPerPage;
+  const woEndIndex = woStartIndex + woItemsPerPage;
+  const paginatedWorkOrders = sortedWorkOrders.slice(woStartIndex, woEndIndex);
+
+  // Render sort icon
+  const SortIcon = ({ column, currentSort, currentDir }: { column: string, currentSort: string, currentDir: 'asc' | 'desc' }) => {
+    if (column !== currentSort) return <span className="text-gray-400 ml-1">⇅</span>;
+    return currentDir === 'asc' ? <span className="ml-1">↑</span> : <span className="ml-1">↓</span>;
+  };
 
   const handleRowClick = async (item: any, type: string) => {
     if (type === 'procedure') {
@@ -127,6 +183,24 @@ export default function KnowledgeBasePage() {
         console.error('Error fetching procedure details:', error);
         setSelectedItem({ ...item, type });
       }
+    } else if (type === 'work-order') {
+      // Fetch procedure details for work order to get expected duration
+      try {
+        const response = await fetch(`/api/procedures/${item.procedure_id}`);
+        if (response.ok) {
+          const procedureDetails = await response.json();
+          setSelectedItem({
+            ...item,
+            type,
+            procedureExpectedDuration: procedureDetails.avg_duration_minutes || 0
+          });
+        } else {
+          setSelectedItem({ ...item, type, procedureExpectedDuration: 0 });
+        }
+      } catch (error) {
+        console.error('Error fetching procedure details:', error);
+        setSelectedItem({ ...item, type, procedureExpectedDuration: 0 });
+      }
     } else {
       setSelectedItem({ ...item, type });
     }
@@ -139,10 +213,10 @@ export default function KnowledgeBasePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 transition-colors duration-300">
+    <div className="min-h-screen bg-gray-50 transition-colors duration-300 animate-fadeIn">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#1c2b40]">Knowledge Base</h1>
             <p className="text-sm text-gray-600 mt-1">
@@ -173,7 +247,7 @@ export default function KnowledgeBasePage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="border-b border-gray-200">
@@ -221,10 +295,15 @@ export default function KnowledgeBasePage() {
             </nav>
           </div>
 
-          <div className="p-6">
+          <div className="p-6 border-l-4 border-[#ff0000]">
             {/* Procedures Tab */}
             {activeTab === 'procedures' && (
               <div>
+                <h2 className="text-xl font-bold text-[#1c2b40] mb-4 flex items-center gap-2">
+                  <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
+                  Procedures Documentation
+                </h2>
+
                 {/* Procedure Filters */}
                 <div className="mb-4 flex items-center gap-3 flex-wrap">
                   <label className="text-sm font-medium text-gray-700">Filter by Category:</label>
@@ -233,7 +312,7 @@ export default function KnowledgeBasePage() {
                     onChange={(e) => setProcedureCategory(e.target.value)}
                     className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff0000]"
                   >
-                    <option value="all">All Categories ({procedures.length})</option>
+                    <option value="all">All</option>
                     {categories.map((cat) => (
                       <option key={cat} value={cat}>
                         {cat} ({procedures.filter(p => p.category === cat).length})
@@ -249,16 +328,46 @@ export default function KnowledgeBasePage() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-y border-gray-200">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">ID</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Name</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Category</th>
-                      <th className="px-4 py-3 text-center font-semibold text-gray-700">Work Orders</th>
-                      <th className="px-4 py-3 text-center font-semibold text-gray-700">Compliance</th>
-                      <th className="px-4 py-3 text-center font-semibold text-gray-700">Incidents</th>
+                      <th
+                        className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('procedure_id', procedureSortBy, procedureSortDir, setProcedureSortBy, setProcedureSortDir)}
+                      >
+                        ID <SortIcon column="procedure_id" currentSort={procedureSortBy} currentDir={procedureSortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('name', procedureSortBy, procedureSortDir, setProcedureSortBy, setProcedureSortDir)}
+                      >
+                        Name <SortIcon column="name" currentSort={procedureSortBy} currentDir={procedureSortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('category', procedureSortBy, procedureSortDir, setProcedureSortBy, setProcedureSortDir)}
+                      >
+                        Category <SortIcon column="category" currentSort={procedureSortBy} currentDir={procedureSortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('total_work_orders', procedureSortBy, procedureSortDir, setProcedureSortBy, setProcedureSortDir)}
+                      >
+                        Work Orders <SortIcon column="total_work_orders" currentSort={procedureSortBy} currentDir={procedureSortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('compliance_rate', procedureSortBy, procedureSortDir, setProcedureSortBy, setProcedureSortDir)}
+                      >
+                        Compliance <SortIcon column="compliance_rate" currentSort={procedureSortBy} currentDir={procedureSortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('incident_count', procedureSortBy, procedureSortDir, setProcedureSortBy, setProcedureSortDir)}
+                      >
+                        Incidents <SortIcon column="incident_count" currentSort={procedureSortBy} currentDir={procedureSortDir} />
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {filteredProcedures.map((proc) => (
+                    {sortedProcedures.map((proc) => (
                       <tr
                         key={proc.procedure_id}
                         onClick={() => handleRowClick(proc, 'procedure')}
@@ -287,6 +396,11 @@ export default function KnowledgeBasePage() {
             {/* Work Orders Tab */}
             {activeTab === 'work-orders' && (
               <div>
+                <h2 className="text-xl font-bold text-[#1c2b40] mb-4 flex items-center gap-2">
+                  <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
+                  Work Orders
+                </h2>
+
                 {/* Work Order Filters */}
                 <div className="mb-4 flex items-center gap-3 flex-wrap">
                   <label className="text-sm font-medium text-gray-700">Filters:</label>
@@ -295,7 +409,7 @@ export default function KnowledgeBasePage() {
                     onChange={(e) => setWoComplianceFilter(e.target.value)}
                     className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff0000]"
                   >
-                    <option value="all">All Compliance</option>
+                    <option value="all">All</option>
                     <option value="compliant">Compliant Only</option>
                     <option value="non-compliant">Non-Compliant Only</option>
                   </select>
@@ -304,7 +418,7 @@ export default function KnowledgeBasePage() {
                     onChange={(e) => setWoIncidentFilter(e.target.value)}
                     className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff0000]"
                   >
-                    <option value="all">All Incidents</option>
+                    <option value="all">All</option>
                     <option value="with-incident">With Incident</option>
                     <option value="no-incident">No Incident</option>
                   </select>
@@ -328,21 +442,21 @@ export default function KnowledgeBasePage() {
                 <div className="grid grid-cols-3 gap-4 mb-6">
                   <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                     <div className="text-sm text-green-600 font-medium">Compliant</div>
-                    <div className="text-2xl font-bold text-green-900 dark:text-green-100">{totalCompliant}</div>
+                    <div className="text-2xl font-bold text-green-900">{totalCompliant}</div>
                     <div className="text-xs text-gray-600 mt-1">
                       {((totalCompliant / workOrders.length) * 100).toFixed(1)}%
                     </div>
                   </div>
-                  <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
+                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                     <div className="text-sm text-red-600 font-medium">Incidents</div>
-                    <div className="text-2xl font-bold text-red-900 dark:text-red-100">{totalIncidents}</div>
+                    <div className="text-2xl font-bold text-red-900">{totalIncidents}</div>
                     <div className="text-xs text-gray-600 mt-1">
                       {((totalIncidents / workOrders.length) * 100).toFixed(1)}%
                     </div>
                   </div>
-                  <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                    <div className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">Rework Required</div>
-                    <div className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">{totalRework}</div>
+                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <div className="text-sm text-yellow-600 font-medium">Rework Required</div>
+                    <div className="text-2xl font-bold text-yellow-900">{totalRework}</div>
                     <div className="text-xs text-gray-600 mt-1">
                       {((totalRework / workOrders.length) * 100).toFixed(1)}%
                     </div>
@@ -353,17 +467,52 @@ export default function KnowledgeBasePage() {
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-y border-gray-200">
                       <tr>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">WO ID</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Procedure</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Worker</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Date</th>
-                        <th className="px-4 py-3 text-center font-semibold text-gray-700">Compliant</th>
-                        <th className="px-4 py-3 text-center font-semibold text-gray-700">Incident</th>
-                        <th className="px-4 py-3 text-center font-semibold text-gray-700">Quality</th>
+                        <th
+                          className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                          onClick={() => handleSort('wo_id', woSortBy, woSortDir, setWoSortBy, setWoSortDir)}
+                        >
+                          WO ID <SortIcon column="wo_id" currentSort={woSortBy} currentDir={woSortDir} />
+                        </th>
+                        <th
+                          className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                          onClick={() => handleSort('procedure_id', woSortBy, woSortDir, setWoSortBy, setWoSortDir)}
+                        >
+                          Procedure <SortIcon column="procedure_id" currentSort={woSortBy} currentDir={woSortDir} />
+                        </th>
+                        <th
+                          className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                          onClick={() => handleSort('worker_id', woSortBy, woSortDir, setWoSortBy, setWoSortDir)}
+                        >
+                          Worker <SortIcon column="worker_id" currentSort={woSortBy} currentDir={woSortDir} />
+                        </th>
+                        <th
+                          className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                          onClick={() => handleSort('scheduled_date', woSortBy, woSortDir, setWoSortBy, setWoSortDir)}
+                        >
+                          Date <SortIcon column="scheduled_date" currentSort={woSortBy} currentDir={woSortDir} />
+                        </th>
+                        <th
+                          className="px-4 py-3 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                          onClick={() => handleSort('compliant', woSortBy, woSortDir, setWoSortBy, setWoSortDir)}
+                        >
+                          Compliant <SortIcon column="compliant" currentSort={woSortBy} currentDir={woSortDir} />
+                        </th>
+                        <th
+                          className="px-4 py-3 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                          onClick={() => handleSort('safety_incident', woSortBy, woSortDir, setWoSortBy, setWoSortDir)}
+                        >
+                          Incident <SortIcon column="safety_incident" currentSort={woSortBy} currentDir={woSortDir} />
+                        </th>
+                        <th
+                          className="px-4 py-3 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                          onClick={() => handleSort('quality_score', woSortBy, woSortDir, setWoSortBy, setWoSortDir)}
+                        >
+                          Quality <SortIcon column="quality_score" currentSort={woSortBy} currentDir={woSortDir} />
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {filteredWorkOrders.slice(0, 100).map((wo) => (
+                      {paginatedWorkOrders.map((wo) => (
                         <tr
                           key={wo.wo_id}
                           onClick={() => handleRowClick(wo, 'work-order')}
@@ -390,9 +539,25 @@ export default function KnowledgeBasePage() {
                       ))}
                     </tbody>
                   </table>
-                  {filteredWorkOrders.length > 100 && (
-                    <div className="text-center py-4 text-sm text-gray-500">
-                      Showing first 100 of {filteredWorkOrders.length} work orders
+                  {woTotalPages > 1 && (
+                    <div className="flex items-center justify-between py-4 px-4 border-t border-gray-200">
+                      <button
+                        onClick={() => setWoCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={woCurrentPage === 1}
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-sm text-gray-600">
+                        Page {woCurrentPage} of {woTotalPages} ({sortedWorkOrders.length} total work orders)
+                      </span>
+                      <button
+                        onClick={() => setWoCurrentPage(prev => Math.min(woTotalPages, prev + 1))}
+                        disabled={woCurrentPage === woTotalPages}
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Next
+                      </button>
                     </div>
                   )}
                 </div>
@@ -402,6 +567,11 @@ export default function KnowledgeBasePage() {
             {/* Facilities Tab */}
             {activeTab === 'facilities' && (
               <div>
+                <h2 className="text-xl font-bold text-[#1c2b40] mb-4 flex items-center gap-2">
+                  <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
+                  Facilities
+                </h2>
+
                 {/* Facility Filters */}
                 <div className="mb-4 flex items-center gap-3 flex-wrap">
                   <label className="text-sm font-medium text-gray-700">Filter by Tier:</label>
@@ -410,7 +580,7 @@ export default function KnowledgeBasePage() {
                     onChange={(e) => setFacilityTierFilter(e.target.value)}
                     className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff0000]"
                   >
-                    <option value="all">All Tiers ({facilities.length})</option>
+                    <option value="all">All</option>
                     {performanceTiers.map((tier) => (
                       <option key={tier} value={tier}>
                         {tier} ({facilities.filter(f => f.performance_tier === tier).length})
@@ -426,15 +596,40 @@ export default function KnowledgeBasePage() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-y border-gray-200">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">ID</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Name</th>
-                      <th className="px-4 py-3 text-center font-semibold text-gray-700">Work Orders</th>
-                      <th className="px-4 py-3 text-center font-semibold text-gray-700">Compliance</th>
-                      <th className="px-4 py-3 text-center font-semibold text-gray-700">Incidents</th>
+                      <th
+                        className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('facility_id', facilitySortBy, facilitySortDir, setFacilitySortBy, setFacilitySortDir)}
+                      >
+                        ID <SortIcon column="facility_id" currentSort={facilitySortBy} currentDir={facilitySortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('name', facilitySortBy, facilitySortDir, setFacilitySortBy, setFacilitySortDir)}
+                      >
+                        Name <SortIcon column="name" currentSort={facilitySortBy} currentDir={facilitySortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('work_order_count', facilitySortBy, facilitySortDir, setFacilitySortBy, setFacilitySortDir)}
+                      >
+                        Work Orders <SortIcon column="work_order_count" currentSort={facilitySortBy} currentDir={facilitySortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('compliance_rate', facilitySortBy, facilitySortDir, setFacilitySortBy, setFacilitySortDir)}
+                      >
+                        Compliance <SortIcon column="compliance_rate" currentSort={facilitySortBy} currentDir={facilitySortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('total_incidents', facilitySortBy, facilitySortDir, setFacilitySortBy, setFacilitySortDir)}
+                      >
+                        Incidents <SortIcon column="total_incidents" currentSort={facilitySortBy} currentDir={facilitySortDir} />
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {filteredFacilities.map((facility) => (
+                    {sortedFacilities.map((facility) => (
                       <tr
                         key={facility.facility_id}
                         onClick={() => handleRowClick(facility, 'facility')}
@@ -462,6 +657,11 @@ export default function KnowledgeBasePage() {
             {/* Workers Tab */}
             {activeTab === 'workers' && (
               <div>
+                <h2 className="text-xl font-bold text-[#1c2b40] mb-4 flex items-center gap-2">
+                  <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
+                  Workers
+                </h2>
+
                 {/* Worker Filters */}
                 <div className="mb-4 flex items-center gap-3 flex-wrap">
                   <label className="text-sm font-medium text-gray-700">Filters:</label>
@@ -470,22 +670,10 @@ export default function KnowledgeBasePage() {
                     onChange={(e) => setSelectedPlatform(e.target.value)}
                     className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff0000]"
                   >
-                    <option value="all">All Platforms</option>
+                    <option value="all">All</option>
                     {platforms.map((platform) => (
                       <option key={platform} value={platform}>
                         {platform} ({workers.filter(w => w.platform === platform).length})
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={workerExperienceFilter}
-                    onChange={(e) => setWorkerExperienceFilter(e.target.value)}
-                    className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff0000]"
-                  >
-                    <option value="all">All Experience Levels</option>
-                    {experienceLevels.map((level) => (
-                      <option key={level} value={level}>
-                        {level} ({workers.filter(w => w.experience_level === level).length})
                       </option>
                     ))}
                   </select>
@@ -498,17 +686,52 @@ export default function KnowledgeBasePage() {
                   <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-y border-gray-200">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">ID</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Name</th>
-                      <th className="px-4 py-3 text-center font-semibold text-gray-700">Platform</th>
-                      <th className="px-4 py-3 text-center font-semibold text-gray-700">Work Orders</th>
-                      <th className="px-4 py-3 text-center font-semibold text-gray-700">Compliance</th>
-                      <th className="px-4 py-3 text-center font-semibold text-gray-700">Quality</th>
-                      <th className="px-4 py-3 text-center font-semibold text-gray-700">Incidents</th>
+                      <th
+                        className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('worker_id', workerSortBy, workerSortDir, setWorkerSortBy, setWorkerSortDir)}
+                      >
+                        ID <SortIcon column="worker_id" currentSort={workerSortBy} currentDir={workerSortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('worker_name', workerSortBy, workerSortDir, setWorkerSortBy, setWorkerSortDir)}
+                      >
+                        Name <SortIcon column="worker_name" currentSort={workerSortBy} currentDir={workerSortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('platform', workerSortBy, workerSortDir, setWorkerSortBy, setWorkerSortDir)}
+                      >
+                        Platform <SortIcon column="platform" currentSort={workerSortBy} currentDir={workerSortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('work_order_count', workerSortBy, workerSortDir, setWorkerSortBy, setWorkerSortDir)}
+                      >
+                        Work Orders <SortIcon column="work_order_count" currentSort={workerSortBy} currentDir={workerSortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('compliance_rate', workerSortBy, workerSortDir, setWorkerSortBy, setWorkerSortDir)}
+                      >
+                        Compliance <SortIcon column="compliance_rate" currentSort={workerSortBy} currentDir={workerSortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('avg_quality_score', workerSortBy, workerSortDir, setWorkerSortBy, setWorkerSortDir)}
+                      >
+                        Quality <SortIcon column="avg_quality_score" currentSort={workerSortBy} currentDir={workerSortDir} />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                        onClick={() => handleSort('incident_count', workerSortBy, workerSortDir, setWorkerSortBy, setWorkerSortDir)}
+                      >
+                        Incidents <SortIcon column="incident_count" currentSort={workerSortBy} currentDir={workerSortDir} />
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {filteredWorkers.map((worker) => (
+                    {sortedWorkers.map((worker) => (
                       <tr
                         key={worker.worker_id}
                         onClick={() => handleRowClick(worker, 'worker')}
@@ -546,7 +769,7 @@ export default function KnowledgeBasePage() {
 
       {/* Detail Modal */}
       {isModalOpen && selectedItem && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50" onClick={closeModal}>
+        <div className="fixed inset-0 z-50 overflow-y-auto" onClick={closeModal}>
           <div className="flex items-center justify-center min-h-screen px-4 py-8">
             {/* Modal panel */}
             <div
@@ -751,7 +974,7 @@ export default function KnowledgeBasePage() {
                         <p className="mt-1 text-sm text-gray-900 font-mono">{selectedItem.worker_id}</p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-4 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Compliant</label>
                         <p className="mt-1">
@@ -772,6 +995,30 @@ export default function KnowledgeBasePage() {
                         <label className="text-sm font-medium text-gray-600">Quality Score</label>
                         <p className="mt-1 text-xl font-bold text-gray-900">
                           {selectedItem.quality_score ? Number(selectedItem.quality_score).toFixed(1) : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Time Variance</label>
+                        <p className="mt-1">
+                          {(() => {
+                            const actualMinutes = (selectedItem.duration_hours || 0) * 60;
+                            const expectedMinutes = selectedItem.procedureExpectedDuration || 0;
+                            const variance = actualMinutes - expectedMinutes;
+
+                            if (expectedMinutes === 0) {
+                              return <span className="text-gray-500 text-sm">N/A</span>;
+                            }
+
+                            const isPositive = variance > 0;
+                            const colorClass = isPositive ? 'text-red-600' : 'text-green-600';
+                            const sign = isPositive ? '+' : '';
+
+                            return (
+                              <span className={`text-xl font-bold ${colorClass}`}>
+                                {sign}{Math.round(variance)} min
+                              </span>
+                            );
+                          })()}
                         </p>
                       </div>
                     </div>

@@ -83,8 +83,8 @@ export default function ProceduresPage() {
   return (
     <div className="min-h-screen bg-gray-50 transition-colors duration-300">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-[#1c2b40]">Procedures</h1>
@@ -97,7 +97,7 @@ export default function ProceduresPage() {
               <select
                 value={selectedProcedureId}
                 onChange={(e) => setSelectedProcedureId(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 bg-white text-[#1c2b40] font-semibold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 bg-white text-[#1c2b40] font-semibold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#ff0000]"
               >
                 {procedures.map((procedure) => (
                   <option key={procedure.procedure_id} value={procedure.procedure_id}>
@@ -114,10 +114,13 @@ export default function ProceduresPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Procedure Statistics */}
-        <section className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-bold text-[#1c2b40] mb-6">Procedure Statistics</h2>
+        <section className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-[#ff0000]">
+          <h2 className="text-xl font-bold text-[#1c2b40] mb-6 flex items-center gap-2">
+            <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
+            Procedure Statistics
+          </h2>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Compliance Rate */}
@@ -191,7 +194,7 @@ export default function ProceduresPage() {
         </section>
 
         {/* Work Order Details */}
-        <section className="bg-white rounded-lg shadow-lg p-6">
+        <section className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-[#ff0000]">
           <DrilldownCards
             workOrders={filteredWorkOrders}
             selectedProcedureId={selectedProcedureId}

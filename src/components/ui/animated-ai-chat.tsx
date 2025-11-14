@@ -202,6 +202,7 @@ export function AnimatedAIChat() {
     const [dashboardData, setDashboardData] = useState<any>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [selectedSource, setSelectedSource] = useState<Source | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Fetch dashboard data on mount
     useEffect(() => {
@@ -238,10 +239,10 @@ export function AnimatedAIChat() {
         fetchDashboardData();
     }, []);
 
-    // Auto-scroll to latest message
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    // Auto-scroll to latest message - disabled to keep view at top
+    // useEffect(() => {
+    //     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // }, [messages]);
 
     const commandSuggestions: CommandSuggestion[] = [
         {
@@ -398,8 +399,19 @@ export function AnimatedAIChat() {
     };
 
     const handleAttachFile = () => {
-        const mockFileName = `file-${Math.floor(Math.random() * 1000)}.pdf`;
-        setAttachments(prev => [...prev, mockFileName]);
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            const fileNames = Array.from(files).map(file => file.name);
+            setAttachments(prev => [...prev, ...fileNames]);
+            // Reset the input so the same file can be selected again if needed
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
     };
 
     const removeAttachment = (index: number) => {
@@ -416,21 +428,34 @@ export function AnimatedAIChat() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col w-full items-center justify-center bg-transparent text-[#1c2b40] p-6 relative overflow-hidden">
-        <div className="absolute inset-0 w-full h-full overflow-hidden">
+        <div className="h-full flex flex-col w-full items-center bg-transparent text-[#1c2b40] relative overflow-hidden">
+        <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
                 <div className="absolute top-0 left-1/4 w-96 h-96 bg-red-500/5 rounded-full mix-blend-normal filter blur-[128px] animate-pulse" />
                 <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-red-600/5 rounded-full mix-blend-normal filter blur-[128px] animate-pulse delay-700" />
                 <div className="absolute top-1/4 right-1/3 w-64 h-64 bg-gray-400/5 rounded-full mix-blend-normal filter blur-[96px] animate-pulse delay-1000" />
             </div>
-            <div className="w-full max-w-2xl mx-auto relative">
+            <motion.div
+                className="w-full max-w-5xl mx-auto relative flex flex-col h-full px-6"
+                initial={false}
+                animate={{
+                    paddingTop: messages.length === 0 ? "20vh" : "2rem",
+                    paddingBottom: "1.5rem",
+                }}
+                transition={{ duration: 0.7, ease: "easeInOut" }}
+            >
+                {/* Messages Area */}
                 <motion.div
-                    className="relative z-10 space-y-12"
+                    className={cn(
+                        "relative z-10 transition-all duration-700 ease-in-out",
+                        messages.length === 0 ? "flex-none" : "flex-1 overflow-y-auto mb-6 min-h-0"
+                    )}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, ease: "easeOut" }}
+                    style={{ scrollbarWidth: 'thin' }}
                 >
                     {messages.length === 0 ? (
-                        <div className="text-center space-y-3">
+                        <div className="text-center space-y-3 mb-12">
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -457,8 +482,7 @@ export function AnimatedAIChat() {
                             </motion.p>
                         </div>
                     ) : (
-                        <div className="backdrop-blur-sm bg-white/80 rounded-2xl border border-gray-200 shadow-2xl p-6 mb-4 max-h-[60vh] overflow-y-auto">
-                            <div className="space-y-4">
+                        <div className="space-y-4 pb-4 px-2">
                                 {messages.map((message, index) => (
                                     <motion.div
                                         key={index}
@@ -478,10 +502,9 @@ export function AnimatedAIChat() {
                                         <div className="flex flex-col gap-2 max-w-[80%]">
                                             <div
                                                 className={cn(
-                                                    "px-5 py-4 rounded-2xl",
                                                     message.role === 'user'
-                                                        ? "bg-[#ff0000] text-white"
-                                                        : "bg-gradient-to-br from-gray-50 to-gray-100 text-[#1c2b40] shadow-sm"
+                                                        ? "px-5 py-4 rounded-2xl bg-[#ff0000] text-white"
+                                                        : "px-5 py-4 rounded-2xl bg-white border border-gray-200 shadow-sm text-[#1c2b40]"
                                                 )}
                                             >
                                                 {message.role === 'user' ? (
@@ -566,16 +589,18 @@ export function AnimatedAIChat() {
                                     </motion.div>
                                 ))}
                                 <div ref={messagesEndRef} />
-                            </div>
                         </div>
                     )}
+                </motion.div>
 
-                    <motion.div
-                        className="relative backdrop-blur-sm bg-white/80 rounded-2xl border border-gray-200 shadow-2xl"
-                        initial={{ scale: 0.98 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.1 }}
-                    >
+                {/* Input Area */}
+                <motion.div
+                    className="relative backdrop-blur-sm bg-white/80 rounded-2xl border border-gray-200 shadow-2xl z-20 flex-shrink-0"
+                    layout
+                    initial={{ scale: 0.98 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.7, ease: "easeInOut" }}
+                >
                         <AnimatePresence>
                             {showCommandPalette && (
                                 <motion.div
@@ -676,17 +701,25 @@ export function AnimatedAIChat() {
 
                         <div className="p-4 border-t border-gray-200 flex items-center justify-between gap-4">
                             <div className="flex items-center gap-3">
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    multiple
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                    accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.gif,.csv,.xls,.xlsx"
+                                />
                                 <motion.button
                                     type="button"
                                     onClick={handleAttachFile}
                                     whileTap={{ scale: 0.94 }}
                                     className="p-2 text-gray-600 hover:text-[#ff0000] rounded-lg transition-colors relative group"
                                 >
-                                    <Paperclip className="w-4 h-4" />
                                     <motion.span
-                                        className="absolute inset-0 bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="absolute inset-0 bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity -z-10"
                                         layoutId="button-highlight"
                                     />
+                                    <Paperclip className="w-4 h-4 relative z-10" />
                                 </motion.button>
                                 <motion.button
                                     type="button"
@@ -701,11 +734,11 @@ export function AnimatedAIChat() {
                                         showCommandPalette && "bg-gray-100 text-[#ff0000]"
                                     )}
                                 >
-                                    <Command className="w-4 h-4" />
                                     <motion.span
-                                        className="absolute inset-0 bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="absolute inset-0 bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity -z-10"
                                         layoutId="button-highlight"
                                     />
+                                    <Command className="w-4 h-4 relative z-10" />
                                 </motion.button>
                             </div>
 
@@ -731,39 +764,45 @@ export function AnimatedAIChat() {
                                 <span>Send</span>
                             </motion.button>
                         </div>
-                    </motion.div>
-
-                    {messages.length === 0 && (
-                        <div className="flex flex-wrap items-center justify-center gap-2">
-                            {commandSuggestions.map((suggestion, index) => (
-                                <motion.button
-                                    key={suggestion.prefix}
-                                    onClick={() => selectCommandSuggestion(index)}
-                                    className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 rounded-lg text-sm text-gray-600 hover:text-[#ff0000] transition-all relative group border border-gray-200"
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.1 }}
-                                >
-                                    {suggestion.icon}
-                                    <span>{suggestion.label}</span>
-                                    <motion.div
-                                        className="absolute inset-0 border border-[#ff0000]/20 rounded-lg opacity-0 group-hover:opacity-100"
-                                        initial={false}
-                                        animate={{
-                                            opacity: [0, 1],
-                                            scale: [0.98, 1],
-                                        }}
-                                        transition={{
-                                            duration: 0.3,
-                                            ease: "easeOut",
-                                        }}
-                                    />
-                                </motion.button>
-                            ))}
-                        </div>
-                    )}
                 </motion.div>
-            </div>
+
+                {/* Command Suggestions - Only shown when no messages */}
+                {messages.length === 0 && (
+                    <motion.div
+                        className="flex flex-wrap items-center justify-center gap-2 mt-6 flex-shrink-0"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        {commandSuggestions.map((suggestion, index) => (
+                            <motion.button
+                                key={suggestion.prefix}
+                                onClick={() => selectCommandSuggestion(index)}
+                                className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 rounded-lg text-sm text-gray-600 hover:text-[#ff0000] transition-all relative group border border-gray-200"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                            >
+                                {suggestion.icon}
+                                <span>{suggestion.label}</span>
+                                <motion.div
+                                    className="absolute inset-0 border border-[#ff0000]/20 rounded-lg opacity-0 group-hover:opacity-100"
+                                    initial={false}
+                                    animate={{
+                                        opacity: [0, 1],
+                                        scale: [0.98, 1],
+                                    }}
+                                    transition={{
+                                        duration: 0.3,
+                                        ease: "easeOut",
+                                    }}
+                                />
+                            </motion.button>
+                        ))}
+                    </motion.div>
+                )}
+            </motion.div>
 
             <AnimatePresence>
                 {isTyping && (

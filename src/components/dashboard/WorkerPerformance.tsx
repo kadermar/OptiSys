@@ -56,32 +56,44 @@ export function WorkerPerformance({ workerData }: WorkerPerformanceProps) {
     .slice(0, 5);
 
   return (
-    <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-bold flex items-center gap-2 dark:text-white">
-          <span>💡</span> Key Insights & Recommendations
+    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-[#ff0000] rounded-lg p-4 shadow-lg">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xl font-bold flex items-center gap-2 text-[#1c2b40]">
+          <div className="w-8 h-8 bg-[#ff0000] rounded-full flex items-center justify-center text-white text-lg shadow-lg">
+            💡
+          </div>
+          Recommendations
         </h3>
         <Link
           href="/workers"
-          className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 transition-colors"
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#1c2b40] hover:bg-[#2d3e54] text-white text-xs font-bold transition-all shadow-lg hover:shadow-xl hover:scale-105"
         >
           View More
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </Link>
       </div>
-      <div className="space-y-2 text-sm dark:text-gray-300">
-        <p>
-          <strong className="dark:text-white">Experience Correlation:</strong> {experienceLevelData[0]?.level} workers show{' '}
-          {experienceLevelData[0]?.avgCompliance}% compliance on average
-        </p>
-        <p>
-          <strong className="dark:text-white">Training Impact:</strong> Focus mentorship on {needsSupport.length} workers with compliance below 80%
-        </p>
-        <p>
-          <strong className="dark:text-white">Best Practice Sharing:</strong> Connect top performers with teams needing support for peer learning
-        </p>
+      <div className="space-y-3">
+        <div className="bg-white/80 backdrop-blur rounded-lg p-3 border-l-4 border-green-500 shadow-md">
+          <p className="text-xs font-medium text-gray-800">
+            <strong className="text-[#1c2b40] text-sm">Experience Correlation:</strong>{' '}
+            <span className="text-gray-700">{experienceLevelData[0]?.level} workers show{' '}
+            <span className="text-[#ff0000] font-bold">{experienceLevelData[0]?.avgCompliance}%</span> compliance</span>
+          </p>
+        </div>
+        <div className="bg-white/80 backdrop-blur rounded-lg p-3 border-l-4 border-yellow-500 shadow-md">
+          <p className="text-xs font-medium text-gray-800">
+            <strong className="text-[#1c2b40] text-sm">Training Impact:</strong>{' '}
+            <span className="text-gray-700">Focus on <span className="text-[#ff0000] font-bold">{needsSupport.length} workers</span> below 80%</span>
+          </p>
+        </div>
+        <div className="bg-white/80 backdrop-blur rounded-lg p-3 border-l-4 border-blue-500 shadow-md">
+          <p className="text-xs font-medium text-gray-800">
+            <strong className="text-[#1c2b40] text-sm">Best Practice Sharing:</strong>{' '}
+            <span className="text-gray-700">Connect top performers for peer learning</span>
+          </p>
+        </div>
       </div>
     </div>
   );
