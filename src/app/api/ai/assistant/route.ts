@@ -17,19 +17,24 @@ export async function POST(request: Request) {
       apiKey: process.env.OPENAI_API_KEY || '',
     });
 
-    // Fetch full procedure details for context if procedures are mentioned
+    // Fetch full procedure details and step-level metrics for context
     const procedureContext = await Promise.all(
       (dashboardData.procedures?.slice(0, 5) || []).map(async (p: any) => {
         try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/procedures/${p.procedure_id}`);
-          if (response.ok) {
-            const fullProcedure = await response.json();
-            return {
-              ...p,
-              steps: fullProcedure.steps,
-              description: fullProcedure.description,
-            };
-          }
+          // Fetch procedure details
+          const procResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/procedures/${p.procedure_id}`);
+          const fullProcedure = procResponse.ok ? await procResponse.json() : {};
+
+          // Fetch step-level adherence metrics
+          const stepResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/dashboard/procedure-steps?procedureId=${p.procedure_id}&startDate=2024-01-01&endDate=2025-12-31`);
+          const stepMetrics = stepResponse.ok ? await stepResponse.json() : [];
+
+          return {
+            ...p,
+            steps: fullProcedure.steps || [],
+            description: fullProcedure.description,
+            stepMetrics: stepMetrics, // Add adherence data for each step
+          };
         } catch (error) {
           console.error(`Failed to fetch procedure ${p.procedure_id}:`, error);
         }
@@ -53,19 +58,32 @@ IMPORTANT INSTRUCTIONS:
 - Connect related information to provide holistic understanding
 - Include specific numbers and percentages to support your analysis
 
+KEY TERMINOLOGY - PAY CLOSE ATTENTION:
+- "PROCEDURE COMPLIANCE" = Overall rate of work orders where ALL steps were completed (reported as compliance_rate at procedure level)
+- "STEP ADHERENCE" = Rate at which a SPECIFIC STEP was completed across work orders (reported as completion_rate at step level)
+- When asked about "procedure step" or "step", refer to STEP ADHERENCE metrics (completion_rate)
+- When asked about "procedure" without "step", refer to PROCEDURE COMPLIANCE metrics
+- A procedure can have low compliance but high step adherence if different work orders skip different steps
+
 ALL PROCEDURES (sorted by total incidents):
 ${dashboardData.procedures?.sort((a: any, b: any) => (b.total_incidents || 0) - (a.total_incidents || 0)).map((p: any) => {
   const procDetail = procedureContext.find((pc: any) => pc.procedure_id === p.procedure_id);
   return `
 PROCEDURE: ${p.name} (${p.procedure_id})
 Category: ${p.category}
-Compliance Rate: ${p.compliance_rate}%
+Compliance Rate: ${p.compliance_rate}% (work orders where ALL steps completed)
 Total Incidents: ${p.total_incidents || 0}
   - Compliant Incidents: ${p.compliant_incidents || 0}
   - Non-Compliant Incidents: ${p.noncompliant_incidents || 0}
 ${procDetail?.description ? `Description: ${procDetail.description}` : ''}
 ${procDetail?.steps?.length > 0 ? `\nPROCEDURE STEPS (${procDetail.steps.length} total):
-${procDetail.steps.map((s: any) => `  Step ${s.step_number}: ${s.description}${s.criticality ? ` [${s.criticality} criticality]` : ''}${s.safety_requirements ? `\n    Safety: ${s.safety_requirements}` : ''}`).join('\n')}` : ''}`;
+${procDetail.steps.map((s: any) => `  Step ${s.step_number}: ${s.description}${s.criticality ? ` [${s.criticality} criticality]` : ''}${s.safety_requirements ? `\n    Safety: ${s.safety_requirements}` : ''}`).join('\n')}` : ''}
+${procDetail?.stepMetrics?.length > 0 ? `\nSTEP-LEVEL ADHERENCE METRICS:
+${procDetail.stepMetrics.map((sm: any) => `  Step ${sm.step_number} (${sm.step_name}):
+    - Adherence: ${sm.completion_rate}% (completed in ${sm.completed_count}/${sm.checkpoint_count} work orders)
+    - Quality: ${sm.quality_rate}% (${sm.quality_issue_count} issues)
+    - Criticality: ${sm.criticality}
+    - Avg Duration: ${sm.avg_duration_minutes} min (variance: ${sm.duration_variance} min)`).join('\n')}` : ''}`;
 }).join('\n---\n')}
 
 SUMMARY METRICS:
@@ -79,7 +97,7 @@ ${dashboardData.facilities?.map((f: any) =>
 ).join('\n')}
 
 WORKERS (${dashboardData.workers?.length || 0} total):
-${dashboardData.workers?.slice(0, 10).map((w: any) =>
+${dashboardData.workers?.map((w: any) =>
   `- ${w.worker_name} (${w.experience_level}): ${w.compliance_rate}% compliance, ${w.incident_count} incidents`
 ).join('\n')}
 
@@ -116,7 +134,7 @@ Analyze the data comprehensively and provide a detailed, insightful response to 
         },
         {
           role: 'user',
-          content: `Question: "${question}"\n\nAvailable sources:\nProcedures: ${dashboardData.procedures?.map((p: any) => p.name).join(', ')}\nFacilities: ${dashboardData.facilities?.map((f: any) => f.name).join(', ')}\nWorkers: ${dashboardData.workers?.slice(0, 10).map((w: any) => w.worker_name).join(', ')}\n\nRespond with a JSON object listing only the relevant source names:\n{"procedures": [], "facilities": [], "workers": []}`,
+          content: `Question: "${question}"\n\nAvailable sources:\nProcedures: ${dashboardData.procedures?.map((p: any) => p.name).join(', ')}\nFacilities: ${dashboardData.facilities?.map((f: any) => f.name).join(', ')}\nWorkers: ${dashboardData.workers?.map((w: any) => w.worker_name).join(', ')}\n\nRespond with a JSON object listing only the relevant source names:\n{"procedures": [], "facilities": [], "workers": []}`,
         },
       ],
       max_tokens: 500,
@@ -141,28 +159,33 @@ Analyze the data comprehensively and provide a detailed, insightful response to 
       )
     ) || [];
 
-    // Fetch full procedure documents including steps
+    // Fetch full procedure documents including steps and step-level metrics
     const proceduresWithDetails = await Promise.all(
       relevantProcedures.map(async (p: any) => {
         try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/procedures/${p.procedure_id}`);
-          if (response.ok) {
-            const fullProcedure = await response.json();
-            return {
-              id: p.procedure_id,
-              name: p.name,
-              type: 'procedure',
-              category: p.category,
-              compliance_rate: p.compliance_rate,
-              compliant_incidents: p.compliant_incidents,
-              noncompliant_incidents: p.noncompliant_incidents,
-              total_incidents: p.total_incidents,
-              metrics: `${p.compliance_rate}% compliance`,
-              steps: fullProcedure.steps || [],
-              description: fullProcedure.description,
-              safety_critical: fullProcedure.safety_critical,
-            };
-          }
+          // Fetch procedure details
+          const procResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/procedures/${p.procedure_id}`);
+          const fullProcedure = procResponse.ok ? await procResponse.json() : {};
+
+          // Fetch step-level adherence metrics
+          const stepResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/dashboard/procedure-steps?procedureId=${p.procedure_id}&startDate=2024-01-01&endDate=2025-12-31`);
+          const stepMetrics = stepResponse.ok ? await stepResponse.json() : [];
+
+          return {
+            id: p.procedure_id,
+            name: p.name,
+            type: 'procedure',
+            category: p.category,
+            compliance_rate: p.compliance_rate,
+            compliant_incidents: p.compliant_incidents,
+            noncompliant_incidents: p.noncompliant_incidents,
+            total_incidents: p.total_incidents,
+            metrics: `${p.compliance_rate}% compliance`,
+            steps: fullProcedure.steps || [],
+            stepMetrics: stepMetrics,
+            description: fullProcedure.description,
+            safety_critical: fullProcedure.safety_critical,
+          };
         } catch (error) {
           console.error(`Failed to fetch procedure ${p.procedure_id}:`, error);
         }
@@ -178,6 +201,7 @@ Analyze the data comprehensively and provide a detailed, insightful response to 
           total_incidents: p.total_incidents,
           metrics: `${p.compliance_rate}% compliance`,
           steps: [],
+          stepMetrics: [],
         };
       })
     );

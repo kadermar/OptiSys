@@ -14,6 +14,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { AIAssistantButton } from "@/components/layout/AIAssistantButton";
 
 export function OptiSysSidebar({ children }: { children: React.ReactNode }) {
   const links = [
@@ -77,6 +78,7 @@ export function OptiSysSidebar({ children }: { children: React.ReactNode }) {
       <main className="flex-1 overflow-auto">
         {children}
       </main>
+      <AIAssistantButton />
     </div>
   );
 }

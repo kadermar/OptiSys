@@ -88,18 +88,18 @@ export function ProcedureStepAnalysis({ procedures, dateRange, fixedProcedureId 
     }
   };
 
-  const getCompletionColor = (rate: number) => {
+  const getAdherenceColor = (rate: number) => {
     if (rate >= 90) return 'bg-green-500';
     if (rate >= 75) return 'bg-yellow-500';
     if (rate >= 60) return 'bg-orange-500';
     return 'bg-red-500';
   };
 
-  const getDeviationColor = (rate: number) => {
-    if (rate >= 20) return 'bg-red-500';
-    if (rate >= 10) return 'bg-orange-500';
-    if (rate >= 5) return 'bg-yellow-500';
-    return 'bg-green-500';
+  const getCompletionColor = (rate: number) => {
+    if (rate >= 90) return 'bg-green-500';
+    if (rate >= 75) return 'bg-yellow-500';
+    if (rate >= 60) return 'bg-orange-500';
+    return 'bg-red-500';
   };
 
   if (loading) {
@@ -192,10 +192,7 @@ export function ProcedureStepAnalysis({ procedures, dateRange, fixedProcedureId 
                     Criticality
                   </th>
                   <th className="px-2 sm:px-4 py-3 text-center font-semibold text-gray-700">
-                    Completion
-                  </th>
-                  <th className="px-2 sm:px-4 py-3 text-center font-semibold text-gray-700">
-                    Deviation
+                    Adherence
                   </th>
                   <th className="px-2 sm:px-4 py-3 text-center font-semibold text-gray-700 hidden lg:table-cell">
                     Quality
@@ -238,32 +235,17 @@ export function ProcedureStepAnalysis({ procedures, dateRange, fixedProcedureId 
                       </span>
                     </td>
 
-                    {/* Completion Rate */}
+                    {/* Adherence Rate */}
                     <td className="px-2 sm:px-4 py-3">
                       <div className="flex flex-col items-center gap-1">
                         <div className="w-full max-w-[100px] h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div
-                            className={`h-full ${getCompletionColor(step.completion_rate)}`}
+                            className={`h-full ${getAdherenceColor(step.completion_rate)}`}
                             style={{ width: `${step.completion_rate}%` }}
                           ></div>
                         </div>
                         <span className="text-xs font-medium text-gray-700">
                           {step.completion_rate}%
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Deviation Rate */}
-                    <td className="px-2 sm:px-4 py-3">
-                      <div className="flex flex-col items-center gap-1">
-                        <div className="w-full max-w-[100px] h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full ${getDeviationColor(step.deviation_rate)}`}
-                            style={{ width: `${step.deviation_rate}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs font-medium text-gray-700">
-                          {step.deviation_rate}%
                         </span>
                       </div>
                     </td>
@@ -303,19 +285,10 @@ export function ProcedureStepAnalysis({ procedures, dateRange, fixedProcedureId 
             </div>
 
             <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-              <div className="text-xs text-green-600 font-medium">Avg Completion</div>
+              <div className="text-xs text-green-600 font-medium">Avg Adherence</div>
               <div className="text-lg sm:text-2xl font-bold text-green-900">
                 {stepData.length > 0
                   ? (stepData.reduce((sum, s) => sum + (Number(s.completion_rate) || 0), 0) / stepData.length).toFixed(1)
-                  : '0.0'}%
-              </div>
-            </div>
-
-            <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-              <div className="text-xs text-orange-600 font-medium">Avg Deviation</div>
-              <div className="text-lg sm:text-2xl font-bold text-orange-900">
-                {stepData.length > 0
-                  ? (stepData.reduce((sum, s) => sum + (Number(s.deviation_rate) || 0), 0) / stepData.length).toFixed(1)
                   : '0.0'}%
               </div>
             </div>

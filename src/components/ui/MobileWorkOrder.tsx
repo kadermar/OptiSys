@@ -143,21 +143,33 @@ export function MobileWorkOrder() {
       const completionPercentage = totalSteps > 0 ? completedCount / totalSteps : 0;
       const qualityScore = completionPercentage * 10;
 
-      // Fetch procedure details to get average duration
+      // Fetch procedure averages for duration and downtime
       let durationHours = 0;
+      let downtimeHours = 0;
       try {
-        const procedureResponse = await fetch(`/api/procedures/${selectedProcedure}`);
-        if (procedureResponse.ok) {
-          const procedureData = await procedureResponse.json();
-          const avgDurationMinutes = procedureData.avg_duration_minutes || 0;
+        const proceduresResponse = await fetch('/api/dashboard/procedures');
+        if (proceduresResponse.ok) {
+          const procedures = await proceduresResponse.json();
+          const procedureData = procedures.find((p: any) => p.procedure_id === selectedProcedure);
 
-          // Generate random duration: avg ± 50 minutes
-          const variance = (Math.random() * 100) - 50; // Random between -50 and +50
-          const actualDurationMinutes = Math.max(1, avgDurationMinutes + variance);
-          durationHours = actualDurationMinutes / 60;
+          if (procedureData) {
+            // avg_duration is in hours, convert to minutes
+            const avgDurationMinutes = (parseFloat(procedureData.avg_duration) || 0) * 60;
+            const avgDowntimeMinutes = (parseFloat(procedureData.avg_downtime) || 0) * 60;
+
+            // Generate random duration: avg ± 10 minutes
+            const durationVariance = (Math.random() * 20) - 10; // Random between -10 and +10
+            const actualDurationMinutes = Math.max(1, avgDurationMinutes + durationVariance);
+            durationHours = actualDurationMinutes / 60;
+
+            // Generate random downtime: avg ± 10 minutes
+            const downtimeVariance = (Math.random() * 20) - 10; // Random between -10 and +10
+            const actualDowntimeMinutes = Math.max(0, avgDowntimeMinutes + downtimeVariance);
+            downtimeHours = actualDowntimeMinutes / 60;
+          }
         }
       } catch (error) {
-        console.error('Error fetching procedure duration:', error);
+        console.error('Error fetching procedure averages:', error);
       }
 
       const response = await fetch('/api/dashboard/work-orders', {
@@ -175,6 +187,7 @@ export function MobileWorkOrder() {
           isCompliant: isCompliant,
           qualityScore: qualityScore,
           durationHours: durationHours,
+          downtimeHours: downtimeHours,
         }),
       });
 

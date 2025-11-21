@@ -14,6 +14,7 @@ export async function POST(request: Request) {
       isCompliant, // Boolean indicating if all steps were completed
       qualityScore, // Calculated quality score based on completion
       durationHours, // Duration of the work order in hours
+      downtimeHours, // Downtime of the work order in hours
     } = body;
 
     if (!procedure_id || !facility_id || !worker_id) {
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
         ${isCompliant},
         ${qualityScore},
         ${durationHours || 0},
-        0,
+        ${downtimeHours || 0},
         ${hasIncident},
         ${!isCompliant},
         false,
@@ -78,43 +79,42 @@ export async function POST(request: Request) {
 
     const workOrderId = workOrderResult.rows[0].wo_id;
 
-    // Create compliance checkpoints for completed steps
-    if (completedSteps && Array.isArray(completedSteps) && completedSteps.length > 0) {
-      for (const stepId of completedSteps) {
-        // Get step details to populate required fields
-        const stepResult = await sql`
-          SELECT step_number, procedure_id
-          FROM procedure_steps
-          WHERE step_id = ${stepId}
-        `;
+    // Get ALL steps for this procedure
+    const allStepsResult = await sql`
+      SELECT step_id, step_number, procedure_id
+      FROM procedure_steps
+      WHERE procedure_id = ${procedure_id}
+      ORDER BY step_number
+    `;
 
-        if (stepResult.rows.length > 0) {
-          const step = stepResult.rows[0];
+    // Create compliance checkpoints for ALL steps (both completed and skipped)
+    const completedStepSet = new Set(completedSteps || []);
 
-          await sql`
-            INSERT INTO compliance_checkpoints (
-              wo_id,
-              procedure_id,
-              step_id,
-              step_number,
-              completed,
-              deviation_noted,
-              meets_spec,
-              duration_minutes
-            )
-            VALUES (
-              ${workOrderId},
-              ${step.procedure_id},
-              ${stepId},
-              ${step.step_number},
-              true,
-              false,
-              true,
-              0
-            )
-          `;
-        }
-      }
+    for (const step of allStepsResult.rows) {
+      const isCompleted = completedStepSet.has(step.step_id);
+
+      await sql`
+        INSERT INTO compliance_checkpoints (
+          wo_id,
+          procedure_id,
+          step_id,
+          step_number,
+          completed,
+          deviation_noted,
+          meets_spec,
+          duration_minutes
+        )
+        VALUES (
+          ${workOrderId},
+          ${step.procedure_id},
+          ${step.step_id},
+          ${step.step_number},
+          ${isCompleted},
+          ${!isCompleted},
+          ${isCompleted},
+          0
+        )
+      `;
     }
 
     return NextResponse.json({
