@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DrilldownCards } from '@/components/dashboard/DrilldownCards';
 import { ProcedureStepAnalysis } from '@/components/dashboard/ProcedureStepAnalysis';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 
-export default function ProceduresPage() {
+function ProceduresContent() {
   const searchParams = useSearchParams();
   const [procedures, setProcedures] = useState<any[]>([]);
   const [workOrders, setWorkOrders] = useState<any[]>([]);
@@ -211,5 +211,13 @@ export default function ProceduresPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+export default function ProceduresPage() {
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <ProceduresContent />
+    </Suspense>
   );
 }

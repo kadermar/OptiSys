@@ -91,7 +91,7 @@ const InteractiveMenu: React.FC<InteractiveMenuProps> = ({ items, accentColor })
             key={item.label}
             className={`menu__item ${isActive ? 'active' : ''}`}
             onClick={() => handleItemClick(index)}
-            ref={(el) => (itemRefs.current[index] = el)}
+            ref={(el) => { itemRefs.current[index] = el; }}
             style={{ '--lineWidth': '0px', cursor: isActive ? 'default' : 'not-allowed', opacity: isActive ? 1 : 0.5 } as React.CSSProperties}
           >
             <div className="menu__icon">
@@ -99,7 +99,7 @@ const InteractiveMenu: React.FC<InteractiveMenuProps> = ({ items, accentColor })
             </div>
             <strong
               className={`menu__text ${isTextActive ? 'active' : ''}`}
-              ref={(el) => (textRefs.current[index] = el)}
+              ref={(el) => { textRefs.current[index] = el; }}
             >
               {item.label}
             </strong>

@@ -31,14 +31,14 @@ export function CorrelationProof({ correlationData, procedureData, facilityData,
   // Prepare bar chart data for procedure rankings
   const rankingData = procedureData?.map((p: any) => {
     const compliantRate = p.compliant_count > 0
-      ? ((p.compliant_incidents / p.compliant_count) * 100).toFixed(1)
+      ? (p.compliant_incidents / p.compliant_count) * 100
       : 0;
     const nonCompliantRate = (p.total_work_orders - p.compliant_count) > 0
-      ? ((p.noncompliant_incidents / (p.total_work_orders - p.compliant_count)) * 100).toFixed(1)
+      ? (p.noncompliant_incidents / (p.total_work_orders - p.compliant_count)) * 100
       : 0;
 
     const improvement = nonCompliantRate > 0 && compliantRate >= 0
-      ? ((1 - (parseFloat(compliantRate.toString()) / parseFloat(nonCompliantRate.toString()))) * 100).toFixed(0)
+      ? ((1 - (compliantRate / nonCompliantRate)) * 100).toFixed(0)
       : 100;
 
     return {
