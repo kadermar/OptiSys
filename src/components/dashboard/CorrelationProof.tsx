@@ -30,10 +30,10 @@ export function CorrelationProof({ correlationData, procedureData, facilityData,
 
   // Prepare bar chart data for procedure rankings
   const rankingData = procedureData?.map((p: any) => {
-    const compliantRate = p.compliant_count > 0
+    const compliantRate: number = p.compliant_count > 0
       ? (p.compliant_incidents / p.compliant_count) * 100
       : 0;
-    const nonCompliantRate = (p.total_work_orders - p.compliant_count) > 0
+    const nonCompliantRate: number = (p.total_work_orders - p.compliant_count) > 0
       ? (p.noncompliant_incidents / (p.total_work_orders - p.compliant_count)) * 100
       : 0;
 
