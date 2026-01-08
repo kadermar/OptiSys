@@ -104,7 +104,7 @@ export function ProcedureStepAnalysis({ procedures, dateRange, fixedProcedureId 
 
   if (loading) {
     return (
-      <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg border-l-4 border-[#ff0000]">
+      <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg border-l-4 border-[#1c2b40]">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-[#1c2b40] flex items-center gap-2">
             <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
@@ -119,7 +119,7 @@ export function ProcedureStepAnalysis({ procedures, dateRange, fixedProcedureId 
   }
 
   return (
-    <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg border-l-4 border-[#ff0000]">
+    <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg border-l-4 border-[#1c2b40]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div>

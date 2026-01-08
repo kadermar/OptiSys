@@ -39,7 +39,7 @@ export function KnowledgeBaseSkeleton() {
           </div>
 
           {/* Content Skeleton */}
-          <div className="p-6 border-l-4 border-[#ff0000]">
+          <div className="p-6 border-l-4 border-[#1c2b40]">
             {/* Section Header */}
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2 h-6 bg-[#ff0000] rounded"></div>

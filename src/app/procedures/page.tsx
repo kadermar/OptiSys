@@ -188,7 +188,7 @@ function ProceduresContent() {
       {/* Main Content */}
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Procedure Statistics */}
-        <section className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-[#ff0000]">
+        <section className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-[#1c2b40]">
           <h2 className="text-xl font-bold text-[#1c2b40] mb-6 flex items-center gap-2">
             <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
             Procedure Statistics
@@ -266,7 +266,7 @@ function ProceduresContent() {
         </section>
 
         {/* Work Order Details */}
-        <section className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-[#ff0000]">
+        <section className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-[#1c2b40]">
           <DrilldownCards
             workOrders={filteredWorkOrders}
             selectedProcedureId={selectedProcedureId}

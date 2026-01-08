@@ -26,7 +26,7 @@ interface SplitScreenData {
 
 export function SplitScreenComparison({ data }: { data: SplitScreenData }) {
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden border-l-4 border-[#ff0000]">
+    <div className="bg-white rounded-lg shadow-lg overflow-hidden border-l-4 border-[#1c2b40]">
       {/* Header */}
       <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
         <h2 className="text-2xl sm:text-3xl font-bold text-[#1c2b40] text-center flex items-center justify-center gap-2">

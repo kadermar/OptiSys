@@ -79,7 +79,7 @@ export function WorkerPerformanceDetailed({ workerData }: WorkerPerformanceDetai
   return (
     <div className="space-y-6">
       {/* Experience Level Summary Cards */}
-      <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-[#ff0000]">
+      <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-[#1c2b40]">
         <h2 className="text-xl font-bold text-[#1c2b40] mb-4 flex items-center gap-2">
           <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
           Experience Level Analysis
@@ -113,7 +113,7 @@ export function WorkerPerformanceDetailed({ workerData }: WorkerPerformanceDetai
       </div>
 
       {/* Scatter Plot: Experience vs Compliance */}
-      <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-[#ff0000]">
+      <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-[#1c2b40]">
         <h3 className="text-xl font-bold text-[#1c2b40] mb-2 flex items-center gap-2">
           <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
           Worker Compliance Distribution by Experience
@@ -270,7 +270,7 @@ export function WorkerPerformanceDetailed({ workerData }: WorkerPerformanceDetai
       </div>
 
       {/* Key Insights */}
-      <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-[#ff0000] rounded-xl p-6 shadow-lg">
+      <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-[#1c2b40] rounded-xl p-6 shadow-lg">
         <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-[#1c2b40]">
           <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
           <span>💡</span> Key Insights & Recommendations

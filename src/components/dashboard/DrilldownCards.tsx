@@ -269,7 +269,7 @@ export function DrilldownCards({ workOrders, selectedProcedureId, onClearFilter 
           onClick={() => setSelectedWorkOrder(null)}
         >
           <div
-            className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border-l-4 border-[#ff0000]"
+            className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border-l-4 border-[#1c2b40]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}

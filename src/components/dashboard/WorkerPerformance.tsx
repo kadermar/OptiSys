@@ -56,7 +56,7 @@ export function WorkerPerformance({ workerData }: WorkerPerformanceProps) {
     .slice(0, 5);
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-[#ff0000] rounded-lg p-4 shadow-lg">
+    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-[#1c2b40] rounded-lg p-4 shadow-lg">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-bold flex items-center gap-2 text-[#1c2b40]">
           <div className="w-8 h-8 bg-[#ff0000] rounded-full flex items-center justify-center text-white text-lg shadow-lg">
