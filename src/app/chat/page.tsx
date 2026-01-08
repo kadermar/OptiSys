@@ -12,7 +12,9 @@ export default function ChatPage() {
     : 'What procedures have the highest compliance rates?';
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 flex flex-col overflow-hidden">
+    <div className={`bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 flex flex-col overflow-hidden ${
+      tour?.isActive ? 'h-[calc(100vh-176px)]' : 'h-screen'
+    }`}>
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50 flex-shrink-0">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
