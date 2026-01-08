@@ -5,9 +5,11 @@ import { useSearchParams } from 'next/navigation';
 import { DrilldownCards } from '@/components/dashboard/DrilldownCards';
 import { ProcedureStepAnalysis } from '@/components/dashboard/ProcedureStepAnalysis';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { useTourSafe } from '@/components/tour';
 
 function ProceduresContent() {
   const searchParams = useSearchParams();
+  const tour = useTourSafe();
   const [procedures, setProcedures] = useState<any[]>([]);
   const [workOrders, setWorkOrders] = useState<any[]>([]);
   const [selectedProcedureId, setSelectedProcedureId] = useState<string | null>(null);
@@ -33,8 +35,15 @@ function ProceduresContent() {
         // Check if there's a selected parameter in the URL
         const selectedFromUrl = searchParams.get('selected');
 
-        // If there's a selected parameter and it exists in procedures, use it
-        if (selectedFromUrl && proceduresData.some((p: any) => p.procedure_id === selectedFromUrl)) {
+        // If tour is active and has a selected procedure, use that
+        if (tour?.isActive && tour?.selectedProcedureId && (tour?.currentStep === 3 || tour?.currentStep === 7)) {
+          if (proceduresData.some((p: any) => p.procedure_id === tour.selectedProcedureId)) {
+            setSelectedProcedureId(tour.selectedProcedureId);
+          } else if (proceduresData.length > 0) {
+            setSelectedProcedureId(proceduresData[0].procedure_id);
+          }
+        } else if (selectedFromUrl && proceduresData.some((p: any) => p.procedure_id === selectedFromUrl)) {
+          // If there's a selected parameter and it exists in procedures, use it
           setSelectedProcedureId(selectedFromUrl);
         } else if (proceduresData.length > 0) {
           // Otherwise select first procedure by default
@@ -49,7 +58,7 @@ function ProceduresContent() {
     }
 
     fetchData();
-  }, [searchParams]);
+  }, [searchParams, tour?.isActive, tour?.selectedProcedureId, tour?.currentStep]);
 
   if (loading) {
     return <LoadingSkeleton />;
@@ -112,6 +121,69 @@ function ProceduresContent() {
           </div>
         </div>
       </header>
+
+      {/* Tour Step 3 Guidance - View Procedure Details */}
+      {tour?.isActive && tour?.currentStep === 3 && (
+        <div className="mx-4 sm:mx-6 lg:mx-8 mt-4 p-4 bg-gradient-to-r from-[#1c2b40] to-[#2d3e54] rounded-lg border-2 border-[#ff0000]">
+          <div className="max-w-[1600px] mx-auto">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#ff0000] flex items-center justify-center text-white font-bold flex-shrink-0">3</div>
+              <div className="flex-1">
+                <p className="text-white font-medium">Procedure Analysis - View Details & Metrics</p>
+                <p className="text-gray-300 text-sm">
+                  Now we drill into {tour.selectedProcedureName ? `"${tour.selectedProcedureName}"` : 'the selected procedure'}.
+                  This view shows procedure-level analytics: compliance rates, incident correlation, and step-by-step adherence data.
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+              <div className="p-2 bg-white/10 rounded border border-white/20">
+                <p className="text-[#ff0000] font-medium">Procedure Statistics</p>
+                <p className="text-gray-300 text-xs">Real-time metrics including compliance rate, incidents, and quality scores</p>
+              </div>
+              <div className="p-2 bg-white/10 rounded border border-white/20">
+                <p className="text-[#ff0000] font-medium">Work Order History</p>
+                <p className="text-gray-300 text-xs">Historical execution records with detailed outcomes</p>
+              </div>
+              <div className="p-2 bg-white/10 rounded border border-white/20">
+                <p className="text-[#ff0000] font-medium">Step Analysis</p>
+                <p className="text-gray-300 text-xs">Step-level adherence and quality metrics</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tour Step 7 Guidance - View Work Order Impact */}
+      {tour?.isActive && tour?.currentStep === 7 && (
+        <div className="mx-4 sm:mx-6 lg:mx-8 mt-4 p-4 bg-gradient-to-r from-[#1c2b40] to-[#2d3e54] rounded-lg border-2 border-[#ff0000]">
+          <div className="max-w-[1600px] mx-auto">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#ff0000] flex items-center justify-center text-white font-bold flex-shrink-0">7</div>
+              <div className="flex-1">
+                <p className="text-white font-medium">Work Order Impact - See Your Task in the System</p>
+                <p className="text-gray-300 text-sm">
+                  Let&apos;s return to {tour.selectedProcedureName ? `"${tour.selectedProcedureName}"` : 'the procedure you worked on'}.
+                  Your completed work order now appears in the history below. Notice how the compliance rate, quality scores, and step adherence metrics have been updated.
+                </p>
+              </div>
+            </div>
+            {tour.completedWorkOrderId && (
+              <div className="mt-3 p-3 bg-green-500/20 rounded border border-green-500/40">
+                <div className="flex items-center gap-2">
+                  <span className="text-green-400">✓</span>
+                  <p className="text-green-300 text-sm font-medium">
+                    Your work order ({tour.completedWorkOrderId}) is now recorded in the system
+                  </p>
+                </div>
+                <p className="text-gray-300 text-xs mt-1">
+                  Scroll down to the Work Order Details section to see your task and its impact on metrics
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">

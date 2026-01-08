@@ -6,8 +6,10 @@ import { ExecutiveSummary } from '@/components/dashboard/ExecutiveSummary';
 import { CorrelationScatterPlot } from '@/components/compliance/CorrelationScatterPlot';
 import { PredictiveAnalytics } from '@/components/dashboard/PredictiveAnalytics';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { useTourSafe } from '@/components/tour';
 
 export default function DashboardPage() {
+  const tour = useTourSafe();
   const [summary, setSummary] = useState<any>(null);
   const [procedures, setProcedures] = useState<any[]>([]);
   const [scatterData, setScatterData] = useState<any[]>([]);
@@ -110,6 +112,69 @@ export default function DashboardPage() {
           </div>
         </div>
       </header>
+
+      {/* Tour Step 6 Guidance - Analytics Impact */}
+      {tour?.isActive && tour?.currentStep === 6 && (
+        <div className="mx-4 sm:mx-6 lg:mx-8 mt-4 p-4 bg-gradient-to-r from-[#1c2b40] to-[#2d3e54] rounded-lg border-2 border-[#ff0000]">
+          <div className="max-w-[1600px] mx-auto">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#ff0000] flex items-center justify-center text-white font-bold flex-shrink-0">6</div>
+              <div className="flex-1">
+                <p className="text-white font-medium">Analytics Engine - See Your Data in Action</p>
+                <p className="text-gray-300 text-sm">
+                  The Analytics Engine correlates procedure adherence with operational outcomes. Your completed task
+                  contributes to these metrics - demonstrating the measurable link between process compliance and business results.
+                </p>
+              </div>
+            </div>
+            {tour.completedWorkOrderId && (
+              <div className="mt-3 p-3 bg-green-500/20 rounded border border-green-500/40">
+                <div className="flex items-center gap-2">
+                  <span className="text-green-400">✓</span>
+                  <p className="text-green-300 text-sm">
+                    Work Order #{tour.completedWorkOrderId} is now reflected in these analytics
+                  </p>
+                </div>
+              </div>
+            )}
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+              <div className="p-2 bg-white/10 rounded border border-white/20">
+                <p className="text-[#ff0000] font-medium">Correlation Analysis</p>
+                <p className="text-gray-300 text-xs">Shows relationship between compliance and operational outcomes</p>
+              </div>
+              <div className="p-2 bg-white/10 rounded border border-white/20">
+                <p className="text-[#ff0000] font-medium">Predictive Analytics</p>
+                <p className="text-gray-300 text-xs">Risk scoring based on historical patterns</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tour Step 8 Guidance - Feedback Loop */}
+      {tour?.isActive && tour?.currentStep === 8 && (
+        <div className="mx-4 sm:mx-6 lg:mx-8 mt-4 p-4 bg-gradient-to-r from-[#1c2b40] to-[#2d3e54] rounded-lg border-2 border-[#ff0000]">
+          <div className="max-w-[1600px] mx-auto">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#ff0000] flex items-center justify-center text-white font-bold flex-shrink-0">8</div>
+              <div className="flex-1">
+                <p className="text-white font-medium">Feedback Loop - Continuous Improvement</p>
+                <p className="text-gray-300 text-sm">
+                  Finally, the Feedback Loop closes the circle. Insights generated from analytics inform procedure updates.
+                  When a procedure shows poor outcomes, the system flags it for review - creating continuous improvement without manual monitoring.
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 p-3 bg-blue-500/20 rounded border border-blue-500/40">
+              <p className="text-blue-300 text-sm font-medium">Tour Complete!</p>
+              <p className="text-gray-300 text-xs mt-1">
+                You&apos;ve seen how OptiSys connects governance to operations. The Key Insights panel on the right
+                shows AI-generated recommendations based on data patterns - explore freely or restart the tour anytime.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">

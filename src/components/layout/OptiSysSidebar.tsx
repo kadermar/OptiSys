@@ -9,15 +9,27 @@ import {
   Database,
   Settings,
   Smartphone,
+  Play,
+  Home,
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { AIAssistantButton } from "@/components/layout/AIAssistantButton";
+import { useTourSafe } from "@/components/tour";
 
 export function OptiSysSidebar({ children }: { children: React.ReactNode }) {
+  const tour = useTourSafe();
+
   const links = [
+    {
+      label: "Welcome",
+      href: "/welcome",
+      icon: (
+        <Home className="text-white h-5 w-5 flex-shrink-0" />
+      ),
+    },
     {
       label: "Dashboard",
       href: "/",
@@ -50,6 +62,12 @@ export function OptiSysSidebar({ children }: { children: React.ReactNode }) {
 
   const [open, setOpen] = useState(false);
 
+  const handleStartTour = () => {
+    if (tour) {
+      tour.startTour();
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row bg-gray-50 w-full flex-1 h-screen overflow-hidden">
       <Sidebar open={open} setOpen={setOpen}>
@@ -60,6 +78,28 @@ export function OptiSysSidebar({ children }: { children: React.ReactNode }) {
               {links.map((link, idx) => (
                 <SidebarLink key={idx} link={link} />
               ))}
+            </div>
+            {/* Start Tour Button */}
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <button
+                onClick={handleStartTour}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors w-full",
+                  "bg-[#ff0000]/20 hover:bg-[#ff0000]/30 text-white",
+                  !open && "justify-center"
+                )}
+              >
+                <Play className="h-5 w-5 flex-shrink-0 text-[#ff0000]" />
+                {open && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-sm font-medium whitespace-pre"
+                  >
+                    Start Tour
+                  </motion.span>
+                )}
+              </button>
             </div>
           </div>
           <div className="flex flex-col gap-2">

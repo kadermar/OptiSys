@@ -1,0 +1,155 @@
+'use client';
+
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight, X, CheckCircle } from 'lucide-react';
+import { useTour } from './TourProvider';
+import { tourSteps, TOTAL_STEPS } from './tourSteps';
+
+export function TourOverlay() {
+  const {
+    currentStep,
+    selectedProcedureName,
+    nextStep,
+    prevStep,
+    endTour,
+    getCurrentStepInfo,
+  } = useTour();
+
+  const stepInfo = getCurrentStepInfo();
+
+  if (!stepInfo) return null;
+
+  const isLastStep = currentStep === TOTAL_STEPS;
+  const isFirstStep = currentStep === 1;
+
+  // Check if we can proceed (some steps require selection)
+  const canProceed = () => {
+    // Step 1 requires procedure selection
+    if (currentStep === 1 && !selectedProcedureName) {
+      return false;
+    }
+    return true;
+  };
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 100, opacity: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-[#1c2b40] to-[#2d3e54] border-t-4 border-[#ff0000] shadow-2xl"
+      >
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          {/* Progress Bar */}
+          <div className="flex items-center justify-center gap-2 mb-3">
+            {tourSteps.map((step) => (
+              <div
+                key={step.id}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  step.id === currentStep
+                    ? 'w-8 bg-[#ff0000]'
+                    : step.id < currentStep
+                    ? 'w-4 bg-green-500'
+                    : 'w-4 bg-gray-500'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Step Info */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* Left: Step Title */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#ff0000] text-white font-bold">
+                {currentStep}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[#ff0000] font-medium">{stepInfo.layer}</span>
+                  <span className="text-xs text-gray-400">•</span>
+                  <span className="text-xs text-gray-400">Step {currentStep} of {TOTAL_STEPS}</span>
+                </div>
+                <h3 className="text-lg font-bold text-white">{stepInfo.title}</h3>
+              </div>
+            </div>
+
+            {/* Center: Story Text */}
+            <div className="flex-1 max-w-xl hidden lg:block">
+              <p className="text-sm text-gray-300 leading-relaxed">
+                {stepInfo.storyText.substring(0, 150)}...
+              </p>
+              {selectedProcedureName && (
+                <p className="text-xs text-[#ff0000] mt-1">
+                  Selected: {selectedProcedureName}
+                </p>
+              )}
+            </div>
+
+            {/* Right: Navigation */}
+            <div className="flex items-center gap-3">
+              {/* Back Button */}
+              <button
+                onClick={prevStep}
+                disabled={isFirstStep}
+                className={`flex items-center gap-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                  isFirstStep
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-700 text-white hover:bg-gray-600'
+                }`}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back
+              </button>
+
+              {/* Next/Complete Button */}
+              {isLastStep ? (
+                <button
+                  onClick={endTour}
+                  className="flex items-center gap-2 px-6 py-2 rounded-lg font-medium bg-green-600 text-white hover:bg-green-500 transition-all"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Complete Tour
+                </button>
+              ) : (
+                <button
+                  onClick={nextStep}
+                  disabled={!canProceed()}
+                  className={`flex items-center gap-1 px-6 py-2 rounded-lg font-medium transition-all ${
+                    canProceed()
+                      ? 'bg-[#ff0000] text-white hover:bg-red-600'
+                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  {currentStep === 1 && !selectedProcedureName ? 'Select a Procedure' : 'Next Step'}
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
+
+              {/* Exit Button */}
+              <button
+                onClick={endTour}
+                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-all"
+                title="Exit Tour"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Story Text */}
+          <div className="lg:hidden mt-3 pt-3 border-t border-gray-600">
+            <p className="text-sm text-gray-300 leading-relaxed">
+              {stepInfo.storyText}
+            </p>
+            {selectedProcedureName && (
+              <p className="text-xs text-[#ff0000] mt-2">
+                Selected Procedure: {selectedProcedureName}
+              </p>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}

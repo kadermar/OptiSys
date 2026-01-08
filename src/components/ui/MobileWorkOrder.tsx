@@ -1,9 +1,108 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Camera, ChevronDown, Check, AlertCircle, Upload, X, CheckCircle, FileText } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ChevronDown,
+  Check,
+  AlertCircle,
+  Upload,
+  X,
+  CheckCircle,
+  FileText,
+  User,
+  Building2,
+  ClipboardList,
+  Camera,
+  MessageSquare,
+  Shield,
+  Loader2,
+  ChevronRight,
+  Sparkles,
+} from 'lucide-react';
+import { useTourSafe } from '@/components/tour';
+
+// Animation variants
+const fadeInUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+};
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const scaleIn = {
+  initial: { scale: 0.9, opacity: 0 },
+  animate: { scale: 1, opacity: 1 },
+  exit: { scale: 0.9, opacity: 0 },
+};
+
+// Progress ring component
+function ProgressRing({ progress, size = 60, strokeWidth = 6 }: { progress: number; size?: number; strokeWidth?: number }) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (progress / 100) * circumference;
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg className="transform -rotate-90" width={size} height={size}>
+        <circle
+          className="text-gray-200"
+          strokeWidth={strokeWidth}
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx={size / 2}
+          cy={size / 2}
+        />
+        <motion.circle
+          className="text-[#ff0000]"
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx={size / 2}
+          cy={size / 2}
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-sm font-bold text-[#1c2b40]">{Math.round(progress)}%</span>
+      </div>
+    </div>
+  );
+}
+
+// Loading skeleton
+function FormSkeleton() {
+  return (
+    <div className="p-6 space-y-6 animate-pulse">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="space-y-2">
+          <div className="h-4 w-24 bg-gray-200 rounded" />
+          <div className="h-12 bg-gray-200 rounded-xl" />
+        </div>
+      ))}
+      <div className="h-48 bg-gray-200 rounded-xl" />
+    </div>
+  );
+}
 
 export function MobileWorkOrder() {
+  const tour = useTourSafe();
+
+  // State
   const [selectedProcedure, setSelectedProcedure] = useState('');
   const [selectedFacility, setSelectedFacility] = useState('');
   const [selectedWorker, setSelectedWorker] = useState('');
@@ -19,13 +118,40 @@ export function MobileWorkOrder() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showProcedureModal, setShowProcedureModal] = useState(false);
   const [procedureDetails, setProcedureDetails] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
-  // Auto-hide toast after 5 seconds
+  // Computed values
+  const completionProgress = useMemo(() => {
+    if (procedureSteps.length === 0) return 0;
+    return (completedSteps.size / procedureSteps.length) * 100;
+  }, [completedSteps.size, procedureSteps.length]);
+
+  const isCompliant = useMemo(() => {
+    return procedureSteps.length > 0 && completedSteps.size === procedureSteps.length;
+  }, [completedSteps.size, procedureSteps.length]);
+
+  const qualityScore = useMemo(() => {
+    if (procedureSteps.length === 0) return 0;
+    return (completedSteps.size / procedureSteps.length) * 10;
+  }, [completedSteps.size, procedureSteps.length]);
+
+  const canSubmit = useMemo(() => {
+    return selectedProcedure && selectedFacility && selectedWorker;
+  }, [selectedProcedure, selectedFacility, selectedWorker]);
+
+  const selectedWorkerData = useMemo(() => {
+    return workers.find(w => w.worker_id === selectedWorker);
+  }, [workers, selectedWorker]);
+
+  const selectedFacilityData = useMemo(() => {
+    return facilities.find(f => f.facility_id === selectedFacility);
+  }, [facilities, selectedFacility]);
+
+  // Effects
   useEffect(() => {
     if (toast) {
-      const timer = setTimeout(() => {
-        setToast(null);
-      }, 5000);
+      const timer = setTimeout(() => setToast(null), 5000);
       return () => clearTimeout(timer);
     }
   }, [toast]);
@@ -39,26 +165,16 @@ export function MobileWorkOrder() {
           fetch('/api/dashboard/workers'),
         ]);
 
-        if (proceduresRes.ok) {
-          const proceduresData = await proceduresRes.json();
-          setProcedures(proceduresData);
-        }
-
-        if (facilitiesRes.ok) {
-          const facilitiesData = await facilitiesRes.json();
-          setFacilities(facilitiesData);
-        }
-
+        if (proceduresRes.ok) setProcedures(await proceduresRes.json());
+        if (facilitiesRes.ok) setFacilities(await facilitiesRes.json());
         if (workersRes.ok) {
           const workersData = await workersRes.json();
           setWorkers(workersData);
-
-          // Randomly assign a worker and their facility
           if (workersData.length > 0) {
             const randomIndex = Math.floor(Math.random() * workersData.length);
-            const selectedWorkerData = workersData[randomIndex];
-            setSelectedWorker(selectedWorkerData.worker_id);
-            setSelectedFacility(selectedWorkerData.facility_id);
+            const worker = workersData[randomIndex];
+            setSelectedWorker(worker.worker_id);
+            setSelectedFacility(worker.facility_id);
           }
         }
       } catch (error) {
@@ -67,11 +183,17 @@ export function MobileWorkOrder() {
         setLoading(false);
       }
     }
-
     fetchData();
   }, []);
 
-  // Fetch procedure steps when a procedure is selected
+  useEffect(() => {
+    if (tour?.isActive && tour?.currentStep === 4 && tour?.selectedProcedureId && procedures.length > 0) {
+      if (!selectedProcedure) {
+        setSelectedProcedure(tour.selectedProcedureId);
+      }
+    }
+  }, [tour?.isActive, tour?.currentStep, tour?.selectedProcedureId, procedures, selectedProcedure]);
+
   useEffect(() => {
     async function fetchProcedureSteps() {
       if (!selectedProcedure) {
@@ -79,22 +201,20 @@ export function MobileWorkOrder() {
         setCompletedSteps(new Set());
         return;
       }
-
       try {
         const response = await fetch(`/api/dashboard/procedure-steps?procedureId=${selectedProcedure}`);
         if (response.ok) {
-          const steps = await response.json();
-          setProcedureSteps(steps);
+          setProcedureSteps(await response.json());
           setCompletedSteps(new Set());
         }
       } catch (error) {
         console.error('Error fetching procedure steps:', error);
       }
     }
-
     fetchProcedureSteps();
   }, [selectedProcedure]);
 
+  // Handlers
   const toggleStep = (stepId: string) => {
     const newCompleted = new Set(completedSteps);
     if (newCompleted.has(stepId)) {
@@ -106,10 +226,8 @@ export function MobileWorkOrder() {
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const newFiles = Array.from(files);
-      setUploadedFiles(prev => [...prev, ...newFiles]);
+    if (e.target.files) {
+      setUploadedFiles(prev => [...prev, ...Array.from(e.target.files!)]);
     }
   };
 
@@ -119,12 +237,10 @@ export function MobileWorkOrder() {
 
   const handleViewProcedure = async () => {
     if (!selectedProcedure) return;
-
     try {
       const response = await fetch(`/api/procedures/${selectedProcedure}`);
       if (response.ok) {
-        const data = await response.json();
-        setProcedureDetails(data);
+        setProcedureDetails(await response.json());
         setShowProcedureModal(true);
       }
     } catch (error) {
@@ -133,534 +249,512 @@ export function MobileWorkOrder() {
   };
 
   const handleSubmit = async () => {
+    if (!canSubmit) return;
+    setIsSubmitting(true);
+
     try {
-      // Calculate compliance: all steps must be completed
-      const totalSteps = procedureSteps.length;
-      const completedCount = completedSteps.size;
-      const isCompliant = totalSteps > 0 && completedCount === totalSteps;
-
-      // Calculate quality score (0-10 scale) based on completion percentage
-      const completionPercentage = totalSteps > 0 ? completedCount / totalSteps : 0;
-      const qualityScore = completionPercentage * 10;
-
-      // Fetch procedure averages for duration and downtime
       let durationHours = 0;
       let downtimeHours = 0;
-      try {
-        const proceduresResponse = await fetch('/api/dashboard/procedures');
-        if (proceduresResponse.ok) {
-          const procedures = await proceduresResponse.json();
-          const procedureData = procedures.find((p: any) => p.procedure_id === selectedProcedure);
 
-          if (procedureData) {
-            // avg_duration is in hours, convert to minutes
-            const avgDurationMinutes = (parseFloat(procedureData.avg_duration) || 0) * 60;
-            const avgDowntimeMinutes = (parseFloat(procedureData.avg_downtime) || 0) * 60;
-
-            // Generate random duration: avg ± 10 minutes
-            const durationVariance = (Math.random() * 20) - 10; // Random between -10 and +10
-            const actualDurationMinutes = Math.max(1, avgDurationMinutes + durationVariance);
-            durationHours = actualDurationMinutes / 60;
-
-            // Generate random downtime: avg ± 10 minutes
-            const downtimeVariance = (Math.random() * 20) - 10; // Random between -10 and +10
-            const actualDowntimeMinutes = Math.max(0, avgDowntimeMinutes + downtimeVariance);
-            downtimeHours = actualDowntimeMinutes / 60;
-          }
+      const proceduresResponse = await fetch('/api/dashboard/procedures');
+      if (proceduresResponse.ok) {
+        const procs = await proceduresResponse.json();
+        const procedureData = procs.find((p: any) => p.procedure_id === selectedProcedure);
+        if (procedureData) {
+          const avgDurationMinutes = (parseFloat(procedureData.avg_duration) || 0) * 60;
+          const avgDowntimeMinutes = (parseFloat(procedureData.avg_downtime) || 0) * 60;
+          durationHours = Math.max(1, avgDurationMinutes + (Math.random() * 20 - 10)) / 60;
+          downtimeHours = Math.max(0, avgDowntimeMinutes + (Math.random() * 20 - 10)) / 60;
         }
-      } catch (error) {
-        console.error('Error fetching procedure averages:', error);
       }
 
       const response = await fetch('/api/dashboard/work-orders', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           procedure_id: selectedProcedure,
           facility_id: selectedFacility,
           worker_id: selectedWorker,
           completedSteps: Array.from(completedSteps),
-          totalSteps: totalSteps,
-          hasIncident: hasIncident,
-          isCompliant: isCompliant,
-          qualityScore: qualityScore,
-          durationHours: durationHours,
-          downtimeHours: downtimeHours,
+          totalSteps: procedureSteps.length,
+          hasIncident,
+          isCompliant,
+          qualityScore,
+          durationHours,
+          downtimeHours,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
+        if (tour?.isActive && tour?.currentStep === 4 && tour?.setCompletedWorkOrder) {
+          tour.setCompletedWorkOrder(data.wo_id);
+        }
         setToast({
-          message: `Work Order #${data.wo_id} submitted successfully! Quality Score: ${qualityScore.toFixed(1)}/10.0 | ${isCompliant ? 'Compliant' : 'Non-Compliant'}`,
-          type: 'success'
+          message: `Work Order #${data.wo_id} submitted successfully!`,
+          type: 'success',
         });
-
         // Reset form
         setSelectedProcedure('');
-        setSelectedFacility('');
         setProcedureSteps([]);
         setCompletedSteps(new Set());
         setUploadedFiles([]);
         setHasIncident(false);
+        setNotes('');
       } else {
         const error = await response.json();
-        setToast({
-          message: `Failed to submit work order: ${error.error}`,
-          type: 'error'
-        });
+        setToast({ message: `Failed: ${error.error}`, type: 'error' });
       }
     } catch (error) {
-      console.error('Error submitting work order:', error);
-      setToast({
-        message: 'Failed to submit work order. Please try again.',
-        type: 'error'
-      });
+      setToast({ message: 'Failed to submit. Please try again.', type: 'error' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  return (
-    <div className="h-full bg-gray-50 flex flex-col relative">
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`absolute top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-[90%] w-full animate-in slide-in-from-top duration-300 ${
-          toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-        } text-white px-6 py-4 rounded-lg shadow-2xl flex items-start gap-3`}>
-          <div className="flex-shrink-0 mt-0.5">
-            {toast.type === 'success' ? (
-              <CheckCircle className="w-6 h-6" />
-            ) : (
-              <AlertCircle className="w-6 h-6" />
-            )}
+  // Early return for loading
+  if (loading) {
+    return (
+      <div className="h-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+        <div className="bg-gradient-to-r from-[#1c2b40] to-[#2d3e54] text-white px-6 py-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#ff0000] flex items-center justify-center">
+              <ClipboardList className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Work Order</h1>
+              <p className="text-xs text-white/70">Loading...</p>
+            </div>
           </div>
-          <div className="flex-1">
-            <p className="font-semibold text-sm">{toast.message}</p>
-          </div>
-          <button
-            onClick={() => setToast(null)}
-            className="flex-shrink-0 hover:bg-white/20 rounded p-1 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
-      )}
+        <FormSkeleton />
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col relative">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            className={`absolute top-4 left-4 right-4 z-50 ${
+              toast.type === 'success'
+                ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                : 'bg-gradient-to-r from-red-500 to-rose-600'
+            } text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3`}
+          >
+            {toast.type === 'success' ? (
+              <CheckCircle className="w-5 h-5 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            )}
+            <p className="text-sm font-medium flex-1">{toast.message}</p>
+            <button onClick={() => setToast(null)} className="p-1 hover:bg-white/20 rounded-lg">
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Header */}
-      <div className="bg-[#ff0000] text-white px-6 py-4 shadow-lg">
+      <div className="bg-gradient-to-r from-[#1c2b40] to-[#2d3e54] text-white px-6 py-5 shadow-lg">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">OptiSys Mobile</h1>
-            <p className="text-sm text-white/80 mt-1">Create Work Order</p>
+          <div className="flex items-center gap-3">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-10 h-10 rounded-xl bg-[#ff0000] flex items-center justify-center shadow-lg"
+            >
+              <ClipboardList className="w-5 h-5" />
+            </motion.div>
+            <div>
+              <h1 className="text-xl font-bold">Work Order</h1>
+              <p className="text-xs text-white/70">Create new work order</p>
+            </div>
           </div>
-          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-            <span className="text-lg font-bold">OS</span>
-          </div>
+          {selectedProcedure && procedureSteps.length > 0 && (
+            <ProgressRing progress={completionProgress} size={50} strokeWidth={5} />
+          )}
         </div>
       </div>
 
       {/* Form Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
-        {/* Worker Assignment */}
-        <div>
-          <label className="block text-sm font-semibold text-[#1c2b40] mb-2">
-            Assigned Worker *
-          </label>
-          <div className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-[#1c2b40] font-medium">
-            {loading ? 'Loading...' : workers.find(w => w.worker_id === selectedWorker)?.worker_name || 'Assigning worker...'}
-          </div>
-        </div>
+      <motion.div
+        className="flex-1 overflow-y-auto"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
+        <div className="p-4 space-y-4">
+          {/* Assignment Cards */}
+          <motion.div variants={fadeInUp} className="grid grid-cols-2 gap-3">
+            {/* Worker Card */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <User className="w-4 h-4 text-blue-600" />
+                </div>
+                <span className="text-xs font-medium text-gray-500">Worker</span>
+              </div>
+              <p className="text-sm font-semibold text-[#1c2b40] truncate">
+                {selectedWorkerData?.worker_name || 'Assigning...'}
+              </p>
+            </div>
 
-        {/* Facility Assignment */}
-        <div>
-          <label className="block text-sm font-semibold text-[#1c2b40] mb-2">
-            Assigned Facility *
-          </label>
-          <div className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-[#1c2b40] font-medium">
-            {loading ? 'Loading...' : facilities.find(f => f.facility_id === selectedFacility)?.name || 'Assigning facility...'}
-          </div>
-        </div>
+            {/* Facility Card */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <Building2 className="w-4 h-4 text-purple-600" />
+                </div>
+                <span className="text-xs font-medium text-gray-500">Facility</span>
+              </div>
+              <p className="text-sm font-semibold text-[#1c2b40] truncate">
+                {selectedFacilityData?.name || 'Assigning...'}
+              </p>
+            </div>
+          </motion.div>
 
-        {/* Procedure Selection */}
-        <div>
-          <label className="block text-sm font-semibold text-[#1c2b40] mb-2">
-            Select Procedure *
-          </label>
-          <div className="relative">
-            <select
-              value={selectedProcedure}
-              onChange={(e) => setSelectedProcedure(e.target.value)}
-              className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg appearance-none focus:border-[#ff0000] focus:outline-none text-[#1c2b40] font-medium"
-              disabled={loading}
-            >
-              <option value="">{loading ? 'Loading...' : 'Choose a procedure...'}</option>
-              {procedures.map((proc) => (
-                <option key={proc.procedure_id} value={proc.procedure_id}>
-                  {proc.procedure_id} - {proc.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-          </div>
-        </div>
-
-        {/* Procedure Steps Checklist - Always visible */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-semibold text-[#1c2b40]">
-              Procedure Steps
+          {/* Procedure Selection */}
+          <motion.div variants={fadeInUp} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <label className="flex items-center gap-2 text-sm font-semibold text-[#1c2b40] mb-3">
+              <FileText className="w-4 h-4 text-[#ff0000]" />
+              Select Procedure
             </label>
-            {selectedProcedure && (
-              <button
-                onClick={handleViewProcedure}
-                className="text-xs font-semibold text-[#ff0000] hover:text-[#cc0000] transition-colors flex items-center gap-1"
+            <div className="relative">
+              <select
+                value={selectedProcedure}
+                onChange={(e) => setSelectedProcedure(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:border-[#ff0000] focus:ring-2 focus:ring-[#ff0000]/20 focus:outline-none text-[#1c2b40] font-medium text-sm transition-all"
               >
-                <FileText className="w-3 h-3" />
-                View More →
-              </button>
+                <option value="">Choose a procedure...</option>
+                {procedures.map((proc) => (
+                  <option key={proc.procedure_id} value={proc.procedure_id}>
+                    {proc.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+            </div>
+            {selectedProcedure && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onClick={handleViewProcedure}
+                className="mt-2 text-xs font-medium text-[#ff0000] hover:text-[#cc0000] flex items-center gap-1"
+              >
+                View procedure details <ChevronRight className="w-3 h-3" />
+              </motion.button>
             )}
-          </div>
-          {!selectedProcedure ? (
-            <div className="w-full px-4 py-6 bg-gray-50 border-2 border-gray-300 rounded-lg text-center text-gray-500">
-              Please select a procedure to view steps
+          </motion.div>
+
+          {/* Procedure Steps */}
+          <motion.div variants={fadeInUp} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4 text-[#ff0000]" />
+                  <span className="text-sm font-semibold text-[#1c2b40]">Checklist</span>
+                </div>
+                {procedureSteps.length > 0 && (
+                  <span className="text-xs font-medium text-gray-500">
+                    {completedSteps.size}/{procedureSteps.length} completed
+                  </span>
+                )}
+              </div>
             </div>
-          ) : procedureSteps.length === 0 ? (
-            <div className="w-full px-4 py-6 bg-gray-50 border-2 border-gray-300 rounded-lg text-center text-gray-500">
-              No steps available for this procedure
-            </div>
-          ) : (
-            <>
-              <div className="bg-white border-2 border-gray-300 rounded-lg divide-y divide-gray-200 max-h-64 overflow-y-auto">
-                {procedureSteps.map((step) => (
-                  <label
+
+            {!selectedProcedure ? (
+              <div className="p-8 text-center">
+                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                  <ClipboardList className="w-6 h-6 text-gray-400" />
+                </div>
+                <p className="text-sm text-gray-500">Select a procedure to view steps</p>
+              </div>
+            ) : procedureSteps.length === 0 ? (
+              <div className="p-8 text-center">
+                <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto mb-3" />
+                <p className="text-sm text-gray-500">Loading steps...</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                {procedureSteps.map((step, index) => (
+                  <motion.label
                     key={step.step_id}
-                    className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors ${
+                      completedSteps.has(step.step_id) ? 'bg-green-50/50' : 'hover:bg-gray-50'
+                    }`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={completedSteps.has(step.step_id)}
-                      onChange={() => toggleStep(step.step_id)}
-                      className="mt-1 w-5 h-5 rounded border-2 border-gray-300 text-[#ff0000] focus:ring-[#ff0000] focus:ring-2 cursor-pointer"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-[#1c2b40]">
-                          Step {step.step_number}
-                        </span>
+                    <div className="pt-0.5">
+                      <motion.div
+                        whileTap={{ scale: 0.9 }}
+                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                          completedSteps.has(step.step_id)
+                            ? 'bg-green-500 border-green-500'
+                            : 'border-gray-300 hover:border-[#ff0000]'
+                        }`}
+                        onClick={() => toggleStep(step.step_id)}
+                      >
+                        {completedSteps.has(step.step_id) && (
+                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                            <Check className="w-4 h-4 text-white" />
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-[#ff0000]">Step {step.step_number}</span>
                         {step.criticality === 'critical' && (
-                          <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">
+                          <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] font-semibold rounded">
                             Critical
                           </span>
                         )}
                         {step.verification_required && (
-                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">
-                            Important
+                          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-semibold rounded">
+                            Verify
                           </span>
                         )}
                       </div>
-                      <p className={`text-sm mt-1 ${completedSteps.has(step.step_id) ? 'text-gray-500 line-through' : 'text-gray-700'}`}>
+                      <p className={`text-sm mt-1 transition-all ${
+                        completedSteps.has(step.step_id) ? 'text-gray-400 line-through' : 'text-gray-700'
+                      }`}>
                         {step.step_name}
                       </p>
                     </div>
-                  </label>
+                  </motion.label>
                 ))}
               </div>
-              <div className="mt-2 text-xs text-gray-600">
-                {completedSteps.size} of {procedureSteps.length} steps completed
-              </div>
-            </>
-          )}
-        </div>
+            )}
+          </motion.div>
 
-        {/* Media Upload */}
-        <div>
-          <label className="block text-sm font-semibold text-[#1c2b40] mb-2">
-            Media
-          </label>
-          <label className="w-full px-4 py-6 bg-white border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center space-y-2 hover:border-[#ff0000] hover:bg-red-50 transition-all cursor-pointer">
-            <Upload className="w-8 h-8 text-gray-400" />
-            <span className="text-sm font-medium text-gray-600">Upload Media</span>
-            <span className="text-xs text-gray-500">Images, videos, documents, etc.</span>
-            <input
-              type="file"
-              multiple
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-          </label>
+          {/* Incident Toggle */}
+          <motion.div variants={fadeInUp} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="w-4 h-4 text-[#ff0000]" />
+              <span className="text-sm font-semibold text-[#1c2b40]">Safety Incident?</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setHasIncident(false)}
+                className={`py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
+                  !hasIncident
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <Check className="w-4 h-4" />
+                No Incident
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setHasIncident(true)}
+                className={`py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
+                  hasIncident
+                    ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <AlertCircle className="w-4 h-4" />
+                Report Incident
+              </motion.button>
+            </div>
+          </motion.div>
 
-          {/* Display uploaded files */}
-          {uploadedFiles.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {uploadedFiles.map((file, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-lg"
-                >
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <Upload className="w-4 h-4 text-[#ff0000] flex-shrink-0" />
-                    <span className="text-sm text-gray-700 truncate">{file.name}</span>
-                    <span className="text-xs text-gray-500 flex-shrink-0">
-                      ({(file.size / 1024).toFixed(1)} KB)
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => removeFile(index)}
-                    className="p-1 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+          {/* Media Upload */}
+          <motion.div variants={fadeInUp} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-3">
+              <Camera className="w-4 h-4 text-[#ff0000]" />
+              <span className="text-sm font-semibold text-[#1c2b40]">Attachments</span>
+            </div>
+            <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#ff0000] hover:bg-red-50/30 transition-all">
+              <Upload className="w-8 h-8 text-gray-400 mb-2" />
+              <span className="text-sm font-medium text-gray-600">Upload files</span>
+              <span className="text-xs text-gray-400 mt-1">Photos, videos, documents</span>
+              <input type="file" multiple onChange={handleFileUpload} className="hidden" />
+            </label>
+            {uploadedFiles.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {uploadedFiles.map((file, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
                   >
-                    <X className="w-4 h-4 text-red-600" />
-                  </button>
+                    <FileText className="w-4 h-4 text-[#ff0000]" />
+                    <span className="text-xs text-gray-700 flex-1 truncate">{file.name}</span>
+                    <button onClick={() => removeFile(index)} className="p-1 hover:bg-red-100 rounded">
+                      <X className="w-3 h-3 text-red-500" />
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+
+          {/* Notes */}
+          <motion.div variants={fadeInUp} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-3">
+              <MessageSquare className="w-4 h-4 text-[#ff0000]" />
+              <span className="text-sm font-semibold text-[#1c2b40]">Notes</span>
+            </div>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add observations or comments..."
+              rows={3}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-[#ff0000] focus:ring-2 focus:ring-[#ff0000]/20 focus:outline-none text-sm resize-none transition-all"
+            />
+          </motion.div>
+
+          {/* Summary Card */}
+          {selectedProcedure && procedureSteps.length > 0 && (
+            <motion.div
+              variants={fadeInUp}
+              className="bg-gradient-to-br from-[#1c2b40] to-[#2d3e54] rounded-xl p-4 shadow-lg"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-[#ff0000]" />
+                <span className="text-sm font-semibold text-white">Work Order Summary</span>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-white">{completedSteps.size}/{procedureSteps.length}</p>
+                  <p className="text-xs text-gray-400">Steps</p>
                 </div>
-              ))}
-              <div className="text-xs text-gray-600 text-center">
-                {uploadedFiles.length} file(s) uploaded
+                <div className="text-center">
+                  <p className={`text-2xl font-bold ${isCompliant ? 'text-green-400' : 'text-red-400'}`}>
+                    {isCompliant ? 'Yes' : 'No'}
+                  </p>
+                  <p className="text-xs text-gray-400">Compliant</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-blue-400">{qualityScore.toFixed(1)}</p>
+                  <p className="text-xs text-gray-400">Quality</p>
+                </div>
               </div>
-            </div>
+            </motion.div>
           )}
-        </div>
 
-        {/* Incident Field */}
-        <div>
-          <label className="block text-sm font-semibold text-[#1c2b40] mb-2">
-            Safety/Quality Incident? *
-          </label>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => setHasIncident(false)}
-              className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
-                !hasIncident
-                  ? 'bg-green-500 text-white shadow-lg'
-                  : 'bg-white border-2 border-gray-300 text-gray-600 hover:border-green-500'
+          {/* Submit Button */}
+          <motion.div variants={fadeInUp} className="pb-4">
+            <motion.button
+              whileHover={{ scale: canSubmit ? 1.02 : 1 }}
+              whileTap={{ scale: canSubmit ? 0.98 : 1 }}
+              onClick={handleSubmit}
+              disabled={!canSubmit || isSubmitting}
+              className={`w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all shadow-lg ${
+                canSubmit
+                  ? 'bg-gradient-to-r from-[#ff0000] to-[#cc0000] text-white hover:shadow-xl'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >
-              <div className="flex items-center justify-center gap-2">
-                <Check className="w-5 h-5" />
-                <span>No</span>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setHasIncident(true)}
-              className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
-                hasIncident
-                  ? 'bg-red-500 text-white shadow-lg'
-                  : 'bg-white border-2 border-gray-300 text-gray-600 hover:border-red-500'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <AlertCircle className="w-5 h-5" />
-                <span>Yes</span>
-              </div>
-            </button>
-          </div>
-          <p className="text-xs text-gray-600 mt-2">
-            Report any safety incidents or quality issues encountered during this work order
-          </p>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Check className="w-5 h-5" />
+                  Submit Work Order
+                </>
+              )}
+            </motion.button>
+          </motion.div>
         </div>
-
-        {/* Comments/Notes */}
-        <div>
-          <label className="block text-sm font-semibold text-[#1c2b40] mb-2">
-            Comments
-          </label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add any additional notes or observations..."
-            rows={4}
-            className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg focus:border-[#ff0000] focus:outline-none text-[#1c2b40] resize-none"
-          />
-          <p className="text-xs text-gray-600 mt-2">
-            Optional notes about the work performed, observations, or recommendations
-          </p>
-        </div>
-
-        {/* Compliance & Quality Summary */}
-        {selectedProcedure && procedureSteps.length > 0 && (
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-[#1c2b40]">Work Order Summary</span>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-700">Compliance Status:</span>
-                <span className={`text-sm font-bold ${
-                  completedSteps.size === procedureSteps.length
-                    ? 'text-green-600'
-                    : 'text-red-600'
-                }`}>
-                  {completedSteps.size === procedureSteps.length ? 'Compliant' : 'Non-Compliant'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-700">Quality Score:</span>
-                <span className="text-sm font-bold text-blue-600">
-                  {((completedSteps.size / procedureSteps.length) * 10).toFixed(1)}/10.0
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-700">Steps Completed:</span>
-                <span className="text-sm font-bold text-gray-700">
-                  {completedSteps.size}/{procedureSteps.length}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Validation Alert */}
-        {(!selectedProcedure || !selectedFacility || !selectedWorker) && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-yellow-800">Required Fields</p>
-              <p className="text-xs text-yellow-700 mt-1">
-                Please fill in all required fields before submitting
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Footer Actions */}
-        <div className="bg-white border-t-2 border-gray-200 px-6 py-6 space-y-3">
-        <button
-          onClick={handleSubmit}
-          disabled={!selectedProcedure || !selectedFacility || !selectedWorker}
-          className={`w-full py-4 rounded-lg font-bold text-lg flex items-center justify-center space-x-2 transition-all ${
-            selectedProcedure && selectedFacility && selectedWorker
-              ? 'bg-[#ff0000] text-white shadow-lg hover:bg-[#ff0000]/90'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          <Check className="w-6 h-6" />
-          <span>Submit Work Order</span>
-        </button>
-        <button className="w-full py-3 rounded-lg font-semibold text-gray-600 hover:bg-gray-100 transition-all">
-          Save as Draft
-        </button>
-        </div>
-        </div>
-      </div>
+      </motion.div>
 
       {/* Procedure Details Modal */}
-      {showProcedureModal && procedureDetails && (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-3 z-50">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-md h-[calc(100%-6rem)] overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="bg-[#ff0000] text-white px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
+      <AnimatePresence>
+        {showProcedureModal && procedureDetails && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={() => setShowProcedureModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80%] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-gradient-to-r from-[#1c2b40] to-[#2d3e54] text-white px-5 py-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-bold">{procedureDetails.name}</h2>
-                  <p className="text-xs text-white/80">{procedureDetails.procedure_id}</p>
+                  <p className="text-xs text-white/70">{procedureDetails.procedure_id}</p>
                 </div>
+                <button
+                  onClick={() => setShowProcedureModal(false)}
+                  className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                onClick={() => setShowProcedureModal(false)}
-                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {/* Procedure Info */}
-              <div className="mb-4">
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="bg-gray-50 rounded-lg p-2">
-                    <div className="text-xs text-gray-600 mb-0.5">Category</div>
-                    <div className="text-xs font-semibold text-[#1c2b40]">{procedureDetails.category}</div>
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-xs text-gray-500 mb-1">Category</p>
+                    <p className="text-sm font-semibold text-[#1c2b40]">{procedureDetails.category}</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-2">
-                    <div className="text-xs text-gray-600 mb-0.5">Safety Critical</div>
-                    <div className="text-xs font-semibold text-[#1c2b40]">
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-xs text-gray-500 mb-1">Safety Critical</p>
+                    <p className="text-sm font-semibold text-[#1c2b40]">
                       {procedureDetails.safety_critical ? 'Yes' : 'No'}
-                    </div>
+                    </p>
                   </div>
                 </div>
-                {procedureDetails.description && (
-                  <div className="bg-blue-50 border-l-4 border-blue-500 p-2 rounded">
-                    <div className="text-xs text-blue-700 font-semibold mb-0.5">Description</div>
-                    <p className="text-xs text-blue-900">{procedureDetails.description}</p>
-                  </div>
-                )}
+
+                {procedureDetails.steps?.map((step: any, index: number) => (
+                  <motion.div
+                    key={step.step_id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-gray-50 rounded-xl p-4"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-[#ff0000] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                        {step.step_number}
+                      </div>
+                      <div>
+                        <p className="text-sm text-[#1c2b40]">{step.description}</p>
+                        {step.safety_requirements && (
+                          <p className="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded mt-2">
+                            {step.safety_requirements}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
 
-              {/* Procedure Steps */}
-              {procedureDetails.steps && procedureDetails.steps.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-bold text-[#1c2b40] mb-3">
-                    Procedure Steps ({procedureDetails.steps.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {procedureDetails.steps.map((step: any) => (
-                      <div
-                        key={step.step_id}
-                        className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-3"
-                      >
-                        <div className="flex items-start gap-2">
-                          <div className="flex-shrink-0 w-7 h-7 bg-[#ff0000] text-white rounded-full flex items-center justify-center text-xs font-bold">
-                            {step.step_number}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-[#1c2b40] leading-relaxed mb-1.5">
-                              {step.description}
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {step.criticality && (
-                                <span
-                                  className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
-                                    step.criticality === 'high'
-                                      ? 'bg-red-100 text-red-700'
-                                      : step.criticality === 'medium'
-                                      ? 'bg-yellow-100 text-yellow-700'
-                                      : 'bg-green-100 text-green-700'
-                                  }`}
-                                >
-                                  {step.criticality}
-                                </span>
-                              )}
-                              {step.expected_duration_minutes && (
-                                <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                                  ~{step.expected_duration_minutes}m
-                                </span>
-                              )}
-                            </div>
-                            {step.safety_requirements && (
-                              <div className="mt-2 pt-2 border-t border-gray-200">
-                                <div className="text-xs text-gray-600 mb-0.5 font-semibold">
-                                  Safety Requirements
-                                </div>
-                                <div className="text-xs text-gray-700 bg-yellow-50 p-1.5 rounded">
-                                  {step.safety_requirements}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="border-t border-gray-200 px-4 py-3">
-              <button
-                onClick={() => setShowProcedureModal(false)}
-                className="w-full py-2.5 bg-gray-200 hover:bg-gray-300 text-[#1c2b40] font-semibold rounded-lg transition-colors text-sm"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <div className="p-4 border-t border-gray-100">
+                <button
+                  onClick={() => setShowProcedureModal(false)}
+                  className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-[#1c2b40] font-semibold rounded-xl transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

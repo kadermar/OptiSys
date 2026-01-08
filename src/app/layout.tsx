@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { OptiSysSidebar } from "@/components/layout/OptiSysSidebar";
+import { TourProvider } from "@/components/tour";
 
 export const metadata: Metadata = {
   title: "OptiSys - Management System Performance Intelligence",
@@ -35,7 +36,9 @@ export default function RootLayout({
       </head>
       <body className="transition-colors duration-300">
         <ThemeProvider>
-          <OptiSysSidebar>{children}</OptiSysSidebar>
+          <TourProvider>
+            <OptiSysSidebar>{children}</OptiSysSidebar>
+          </TourProvider>
         </ThemeProvider>
       </body>
     </html>
