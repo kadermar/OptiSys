@@ -17,7 +17,7 @@ export function CorrelationScatterPlot({ data }: { data: CorrelationPoint[] }) {
   const trendLine = calculateTrendLine(data);
 
   return (
-    <div className="bg-white rounded-xl shadow-2xl p-8 border-l-4 border-[#ff0000]">
+    <div className="bg-white rounded-xl shadow-2xl p-8 border-l-4 border-[#1c2b40]">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div>
           <h2 className="text-2xl font-bold text-[#1c2b40] flex items-center gap-3">

@@ -78,7 +78,7 @@ export function PredictiveAnalytics({ dateRange }: PredictiveAnalyticsProps) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-2xl p-8 border-l-4 border-[#ff0000]">
+      <div className="bg-white rounded-xl shadow-2xl p-8 border-l-4 border-[#1c2b40]">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-[#1c2b40] flex items-center gap-3">
             <div className="w-10 h-10 bg-[#ff0000] rounded-full flex items-center justify-center text-white text-xl shadow-lg">
@@ -95,7 +95,7 @@ export function PredictiveAnalytics({ dateRange }: PredictiveAnalyticsProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-2xl p-8 border-l-4 border-[#ff0000]">
+    <div className="bg-white rounded-xl shadow-2xl p-8 border-l-4 border-[#1c2b40]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div>
@@ -258,7 +258,7 @@ export function PredictiveAnalytics({ dateRange }: PredictiveAnalyticsProps) {
           </div>
 
           {/* Risk Methodology */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border-l-4 border-[#ff0000] shadow-lg">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border-l-4 border-[#1c2b40] shadow-lg">
             <h4 className="text-base font-bold text-[#1c2b40] mb-3 flex items-center gap-2">
               <span className="text-lg">ℹ️</span>
               Risk Score Methodology
