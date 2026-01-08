@@ -115,7 +115,10 @@ export function OptiSysSidebar({ children }: { children: React.ReactNode }) {
           </div>
         </SidebarBody>
       </Sidebar>
-      <main className="flex-1 overflow-auto">
+      <main className={cn(
+        "flex-1 overflow-auto transition-[padding] duration-300",
+        tour?.isActive && "pb-44"
+      )}>
         {children}
       </main>
       <AIAssistantButton />
