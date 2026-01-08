@@ -1,12 +1,199 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  LayoutDashboard,
+  FileText,
+  Users,
+  Database,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  CheckCircle,
+  BarChart3,
+  Activity,
+  Building2,
+  ClipboardList,
+  ArrowRight,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react';
 import { ExecutiveSummary } from '@/components/dashboard/ExecutiveSummary';
 import { CorrelationScatterPlot } from '@/components/compliance/CorrelationScatterPlot';
 import { PredictiveAnalytics } from '@/components/dashboard/PredictiveAnalytics';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { useTourSafe } from '@/components/tour';
+
+// Animation variants
+const fadeInUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+};
+
+const staggerContainer = {
+  animate: {
+    transition: { staggerChildren: 0.1 },
+  },
+};
+
+const scaleIn = {
+  initial: { opacity: 0, scale: 0.95 },
+  animate: { opacity: 1, scale: 1 },
+};
+
+// Loading Skeleton
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-[1600px] mx-auto">
+          <div className="h-8 w-48 bg-gray-200 rounded-lg animate-pulse mb-2" />
+          <div className="h-4 w-96 bg-gray-200 rounded animate-pulse" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-28 bg-gray-200 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex-1 space-y-6">
+            <div className="h-80 bg-white rounded-2xl animate-pulse" />
+            <div className="h-64 bg-white rounded-2xl animate-pulse" />
+          </div>
+          <div className="lg:w-[380px] space-y-6">
+            <div className="h-72 bg-white rounded-2xl animate-pulse" />
+            <div className="h-64 bg-white rounded-2xl animate-pulse" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Stat Card Component
+function StatCard({ icon: Icon, label, value, subValue, trend, color }: {
+  icon: any;
+  label: string;
+  value: string | number;
+  subValue?: string;
+  trend?: number;
+  color: 'red' | 'blue' | 'green' | 'purple' | 'amber';
+}) {
+  const colorClasses = {
+    red: 'from-red-500 to-rose-600',
+    blue: 'from-blue-500 to-indigo-600',
+    green: 'from-green-500 to-emerald-600',
+    purple: 'from-purple-500 to-violet-600',
+    amber: 'from-amber-500 to-orange-600',
+  };
+
+  return (
+    <motion.div
+      variants={fadeInUp}
+      whileHover={{ y: -4, scale: 1.02 }}
+      className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-lg transition-all group"
+    >
+      <div className="flex items-start justify-between">
+        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colorClasses[color]} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+          <Icon className="w-6 h-6 text-white" />
+        </div>
+        {trend !== undefined && (
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${
+            trend >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          }`}>
+            {trend >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            {Math.abs(trend)}%
+          </div>
+        )}
+      </div>
+      <div className="mt-4">
+        <p className="text-3xl font-bold text-[#1c2b40]">{value}</p>
+        <p className="text-sm font-medium text-gray-500 mt-1">{label}</p>
+        {subValue && <p className="text-xs text-gray-400 mt-0.5">{subValue}</p>}
+      </div>
+    </motion.div>
+  );
+}
+
+// Navigation Card Component
+function NavCard({ href, icon: Icon, title, description, color }: {
+  href: string;
+  icon: any;
+  title: string;
+  description: string;
+  color: string;
+}) {
+  return (
+    <Link href={href}>
+      <motion.div
+        whileHover={{ y: -2, scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className="group relative bg-white hover:bg-gray-50 rounded-xl p-4 border border-gray-200 hover:border-[#ff0000]/30 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
+      >
+        <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-5 transition-opacity`} />
+        <div className="relative flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${color} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
+            <Icon className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-[#1c2b40] group-hover:text-[#ff0000] transition-colors">{title}</p>
+            <p className="text-xs text-gray-500 truncate">{description}</p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#ff0000] group-hover:translate-x-1 transition-all" />
+        </div>
+      </motion.div>
+    </Link>
+  );
+}
+
+// Facility Card Component
+function FacilityCard({ facility }: { facility: any }) {
+  const complianceRate = parseFloat(facility.compliance_rate);
+  const isGood = complianceRate >= 85;
+
+  return (
+    <motion.div
+      variants={fadeInUp}
+      className="group bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all"
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#1c2b40] to-[#2d3e54] flex items-center justify-center">
+            <Building2 className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="font-semibold text-[#1c2b40] group-hover:text-[#ff0000] transition-colors">{facility.name}</p>
+            <p className="text-xs text-gray-500">{facility.performance_tier} Performer</p>
+          </div>
+        </div>
+        <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+          isGood ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+        }`}>
+          {isGood ? <CheckCircle className="w-3 h-3 inline mr-1" /> : <AlertTriangle className="w-3 h-3 inline mr-1" />}
+          {complianceRate}%
+        </div>
+      </div>
+      <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${complianceRate}%` }}
+          transition={{ duration: 1, ease: 'easeOut' }}
+          className={`absolute inset-y-0 left-0 rounded-full ${
+            isGood ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-amber-500 to-orange-500'
+          }`}
+        />
+      </div>
+      <div className="flex justify-between mt-2 text-xs text-gray-500">
+        <span>{facility.work_order_count} work orders</span>
+        <span>{facility.total_incidents} incidents</span>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function DashboardPage() {
   const tour = useTourSafe();
@@ -20,11 +207,22 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState({ start: '2024-01-01', end: '2024-09-30' });
 
-
-  const handleDateRangeChange = (startDate: string, endDate: string) => {
-    setDateRange({ start: startDate, end: endDate });
-    setLoading(true);
-  };
+  // Computed stats
+  const stats = useMemo(() => {
+    if (!summary) return null;
+    const totalIncidents = workOrders.filter(wo => wo.safety_incident).length;
+    const avgQuality = workOrders.length > 0
+      ? (workOrders.reduce((sum, wo) => sum + (parseFloat(wo.quality_score) || 0), 0) / workOrders.length).toFixed(1)
+      : '0';
+    return {
+      totalWorkOrders: workOrders.length,
+      totalProcedures: procedures.length,
+      totalWorkers: workers.length,
+      totalIncidents,
+      avgQuality,
+      complianceRate: summary.overallCompliance || 0,
+    };
+  }, [summary, workOrders, procedures, workers]);
 
   useEffect(() => {
     async function fetchData() {
@@ -65,184 +263,254 @@ export default function DashboardPage() {
   }, [dateRange]);
 
   if (loading) {
-    return <LoadingSkeleton />;
+    return <DashboardSkeleton />;
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="text-[#ff0000] text-xl mb-4">⚠️ Error</div>
-          <p className="text-[#1c2b40]">{error}</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="text-center bg-white p-8 rounded-2xl shadow-xl max-w-md"
+        >
+          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold text-[#1c2b40] mb-2">Connection Error</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-2 mx-auto px-4 py-2 bg-[#ff0000] text-white rounded-lg hover:bg-red-600 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Retry
+          </button>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 transition-colors duration-300 animate-fadeIn">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#1c2b40]">Dashboard</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Operational intelligence and performance analytics for compliance monitoring
-            </p>
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff0000] to-[#cc0000] flex items-center justify-center shadow-lg">
+                <LayoutDashboard className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-[#1c2b40]">Dashboard</h1>
+                <p className="text-sm text-gray-500">Operational intelligence and performance analytics</p>
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500">
+              <Activity className="w-4 h-4 text-green-500" />
+              <span>Live data</span>
+            </div>
           </div>
 
+          {/* Stats Grid */}
+          <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5"
+          >
+            <StatCard
+              icon={ClipboardList}
+              label="Work Orders"
+              value={stats?.totalWorkOrders || 0}
+              subValue="Total executed"
+              color="blue"
+            />
+            <StatCard
+              icon={CheckCircle}
+              label="Compliance Rate"
+              value={`${stats?.complianceRate || 0}%`}
+              subValue="Overall performance"
+              trend={2.4}
+              color="green"
+            />
+            <StatCard
+              icon={BarChart3}
+              label="Avg Quality"
+              value={stats?.avgQuality || '0'}
+              subValue="Quality score"
+              color="purple"
+            />
+            <StatCard
+              icon={AlertTriangle}
+              label="Incidents"
+              value={stats?.totalIncidents || 0}
+              subValue="Safety events"
+              trend={-5.2}
+              color="amber"
+            />
+          </motion.div>
+
           {/* Navigation Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-            <Link href="/procedures" className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border-2 border-red-200 hover:border-red-400 hover:shadow-lg transition-all cursor-pointer group">
-              <div className="text-xs text-[#ff0000] font-medium mb-1">Procedure Analysis</div>
-              <div className="text-sm text-[#1c2b40] group-hover:text-[#ff0000] transition-colors">Analyze procedures →</div>
-            </Link>
-            <Link href="/compliance-analysis" className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border-2 border-red-200 hover:border-red-400 hover:shadow-lg transition-all cursor-pointer group">
-              <div className="text-xs text-[#ff0000] font-medium mb-1">Compliance</div>
-              <div className="text-sm text-[#1c2b40] group-hover:text-[#ff0000] transition-colors">View analysis →</div>
-            </Link>
-            <Link href="/workers" className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border-2 border-red-200 hover:border-red-400 hover:shadow-lg transition-all cursor-pointer group">
-              <div className="text-xs text-[#ff0000] font-medium mb-1">Worker Performance</div>
-              <div className="text-sm text-[#1c2b40] group-hover:text-[#ff0000] transition-colors">View workers →</div>
-            </Link>
-            <Link href="/knowledge-base" className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border-2 border-red-200 hover:border-red-400 hover:shadow-lg transition-all cursor-pointer group">
-              <div className="text-xs text-[#ff0000] font-medium mb-1">Knowledge Base</div>
-              <div className="text-sm text-[#1c2b40] group-hover:text-[#ff0000] transition-colors">Browse data →</div>
-            </Link>
-          </div>
+          <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+            className="grid grid-cols-2 md:grid-cols-4 gap-3"
+          >
+            <NavCard
+              href="/procedures"
+              icon={FileText}
+              title="Procedures"
+              description="Analyze procedure metrics"
+              color="from-red-500 to-rose-600"
+            />
+            <NavCard
+              href="/compliance-analysis"
+              icon={BarChart3}
+              title="Compliance"
+              description="View detailed analysis"
+              color="from-blue-500 to-indigo-600"
+            />
+            <NavCard
+              href="/workers"
+              icon={Users}
+              title="Workers"
+              description="Performance tracking"
+              color="from-green-500 to-emerald-600"
+            />
+            <NavCard
+              href="/knowledge-base"
+              icon={Database}
+              title="Knowledge Base"
+              description="Browse all data"
+              color="from-purple-500 to-violet-600"
+            />
+          </motion.div>
         </div>
       </header>
 
-      {/* Tour Step 6 Guidance - Analytics Impact */}
-      {tour?.isActive && tour?.currentStep === 6 && (
-        <div className="mx-4 sm:mx-6 lg:mx-8 mt-4 p-4 bg-gradient-to-r from-[#1c2b40] to-[#2d3e54] rounded-lg border-2 border-[#ff0000]">
-          <div className="max-w-[1600px] mx-auto">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#ff0000] flex items-center justify-center text-white font-bold flex-shrink-0">6</div>
-              <div className="flex-1">
-                <p className="text-white font-medium">Analytics Engine - See Your Data in Action</p>
-                <p className="text-gray-300 text-sm">
-                  The Analytics Engine correlates procedure adherence with operational outcomes. Your completed task
-                  contributes to these metrics - demonstrating the measurable link between process compliance and business results.
-                </p>
-              </div>
-            </div>
-            {tour.completedWorkOrderId && (
-              <div className="mt-3 p-3 bg-green-500/20 rounded border border-green-500/40">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400">✓</span>
-                  <p className="text-green-300 text-sm">
-                    Work Order #{tour.completedWorkOrderId} is now reflected in these analytics
+      {/* Tour Guidance */}
+      <AnimatePresence>
+        {tour?.isActive && (tour?.currentStep === 6 || tour?.currentStep === 8) && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-4"
+          >
+            <div className="p-4 bg-gradient-to-r from-[#1c2b40] to-[#2d3e54] rounded-xl border-2 border-[#ff0000] shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#ff0000] flex items-center justify-center text-white font-bold shadow-lg flex-shrink-0">
+                  {tour?.currentStep}
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-semibold">
+                    {tour?.currentStep === 6 ? 'Analytics Engine - See Your Data in Action' : 'Feedback Loop - Continuous Improvement'}
+                  </p>
+                  <p className="text-gray-300 text-sm">
+                    {tour?.currentStep === 6
+                      ? 'The Analytics Engine correlates procedure adherence with operational outcomes. Your completed task contributes to these metrics.'
+                      : 'The Feedback Loop closes the circle. Insights inform procedure updates for continuous improvement.'}
                   </p>
                 </div>
               </div>
-            )}
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-              <div className="p-2 bg-white/10 rounded border border-white/20">
-                <p className="text-[#ff0000] font-medium">Correlation Analysis</p>
-                <p className="text-gray-300 text-xs">Shows relationship between compliance and operational outcomes</p>
-              </div>
-              <div className="p-2 bg-white/10 rounded border border-white/20">
-                <p className="text-[#ff0000] font-medium">Predictive Analytics</p>
-                <p className="text-gray-300 text-xs">Risk scoring based on historical patterns</p>
-              </div>
+              {tour?.currentStep === 6 && tour.completedWorkOrderId && (
+                <div className="mt-3 p-2 bg-green-500/20 rounded-lg border border-green-500/50 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-400" />
+                  <p className="text-green-300 text-sm">Work Order #{tour.completedWorkOrderId} is now reflected in analytics</p>
+                </div>
+              )}
+              {tour?.currentStep === 8 && (
+                <div className="mt-3 p-2 bg-blue-500/20 rounded-lg border border-blue-500/50">
+                  <p className="text-blue-300 text-sm font-medium">Tour Complete!</p>
+                  <p className="text-gray-400 text-xs mt-1">You've seen how OptiSys connects governance to operations. Explore freely or restart anytime.</p>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tour Step 8 Guidance - Feedback Loop */}
-      {tour?.isActive && tour?.currentStep === 8 && (
-        <div className="mx-4 sm:mx-6 lg:mx-8 mt-4 p-4 bg-gradient-to-r from-[#1c2b40] to-[#2d3e54] rounded-lg border-2 border-[#ff0000]">
-          <div className="max-w-[1600px] mx-auto">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#ff0000] flex items-center justify-center text-white font-bold flex-shrink-0">8</div>
-              <div className="flex-1">
-                <p className="text-white font-medium">Feedback Loop - Continuous Improvement</p>
-                <p className="text-gray-300 text-sm">
-                  Finally, the Feedback Loop closes the circle. Insights generated from analytics inform procedure updates.
-                  When a procedure shows poor outcomes, the system flags it for review - creating continuous improvement without manual monitoring.
-                </p>
-              </div>
-            </div>
-            <div className="mt-3 p-3 bg-blue-500/20 rounded border border-blue-500/40">
-              <p className="text-blue-300 text-sm font-medium">Tour Complete!</p>
-              <p className="text-gray-300 text-xs mt-1">
-                You&apos;ve seen how OptiSys connects governance to operations. The Key Insights panel on the right
-                shows AI-generated recommendations based on data patterns - explore freely or restart the tour anytime.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
-      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Column - 70% */}
-          <div className="flex-1 lg:w-[70%] space-y-8">
-            {/* Statistical Analysis */}
-            <section className="animate-slideUp transition-colors duration-300" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
+          {/* Left Column */}
+          <div className="flex-1 space-y-6">
+            {/* Correlation Analysis */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
               {scatterData.length > 0 && <CorrelationScatterPlot data={scatterData} />}
-            </section>
+            </motion.section>
 
             {/* Predictive Analytics */}
-            <section className="animate-slideUp transition-colors duration-300" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
               <PredictiveAnalytics dateRange={dateRange} />
-            </section>
+            </motion.section>
           </div>
 
-          {/* Right Column - 30% */}
-          <div className="lg:w-[30%] space-y-6">
-            {/* Key Insights & Recommendations */}
-            <section className="animate-slideUp transition-colors duration-300" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
+          {/* Right Column */}
+          <div className="lg:w-[380px] space-y-6">
+            {/* Key Insights */}
+            <motion.section
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
               <ExecutiveSummary procedureData={procedures} workerData={workers} />
-            </section>
+            </motion.section>
 
             {/* Compliance by Facility */}
-            <section className="bg-white rounded-lg shadow-lg border-l-4 border-[#ff0000] p-6 animate-slideUp transition-colors duration-300" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
-              <h3 className="text-lg font-bold mb-2 text-[#1c2b40] flex items-center gap-2">
-                <span className="w-2 h-6 bg-[#ff0000] rounded"></span>
-                Compliance by Facility
-              </h3>
-              <p className="text-xs text-gray-600 mb-4">Cultural patterns across platforms</p>
-
-              <div className="space-y-4">
-                {facilities?.map((facility: any) => (
-                  <div key={facility.facility_id} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold text-[#1c2b40]">{facility.name}</p>
-                        <p className="text-sm text-gray-600">{facility.performance_tier} Performer</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-[#1c2b40]">{facility.compliance_rate}%</p>
-                        <p className="text-xs text-gray-600">
-                          {facility.work_order_count} WOs, {facility.total_incidents} incidents
-                        </p>
-                      </div>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-[#1c2b40] h-2 rounded-full transition-all"
-                        style={{ width: `${facility.compliance_rate}%` }}
-                      />
-                    </div>
+            <motion.section
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+            >
+              <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-6 bg-[#ff0000] rounded-full" />
+                  <div>
+                    <h3 className="font-bold text-[#1c2b40]">Compliance by Facility</h3>
+                    <p className="text-xs text-gray-500">Cultural patterns across platforms</p>
                   </div>
-                ))}
+                </div>
               </div>
-            </section>
+              <div className="p-4 space-y-3">
+                <motion.div
+                  variants={staggerContainer}
+                  initial="initial"
+                  animate="animate"
+                >
+                  {facilities?.map((facility: any) => (
+                    <FacilityCard key={facility.facility_id} facility={facility} />
+                  ))}
+                </motion.div>
+              </div>
+            </motion.section>
           </div>
         </div>
 
         {/* Footer */}
-        <footer className="text-center text-sm text-gray-600 py-8 font-medium mt-8">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-2 h-2 bg-[#ff0000] rounded-full"></div>
-            <p>OptiSys - Management System Performance Intelligence</p>
-            <div className="w-2 h-2 bg-[#ff0000] rounded-full"></div>
+        <motion.footer
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-center py-8 mt-8 border-t border-gray-200"
+        >
+          <div className="flex items-center justify-center gap-3 text-gray-500 text-sm">
+            <div className="w-1.5 h-1.5 bg-[#ff0000] rounded-full" />
+            <span>OptiSys — Management System Performance Intelligence</span>
+            <div className="w-1.5 h-1.5 bg-[#ff0000] rounded-full" />
           </div>
-        </footer>
+        </motion.footer>
       </main>
     </div>
   );
