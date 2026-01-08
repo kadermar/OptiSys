@@ -57,11 +57,11 @@ export function TourOverlay() {
             ))}
           </div>
 
-          {/* Step Info */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* Step Info - Header Row */}
+          <div className="flex items-center justify-between gap-4 mb-3">
             {/* Left: Step Title */}
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#ff0000] text-white font-bold">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#ff0000] text-white font-bold flex-shrink-0">
                 {currentStep}
               </div>
               <div>
@@ -74,20 +74,8 @@ export function TourOverlay() {
               </div>
             </div>
 
-            {/* Center: Story Text */}
-            <div className="flex-1 max-w-xl hidden lg:block">
-              <p className="text-sm text-gray-300 leading-relaxed">
-                {stepInfo.storyText.substring(0, 150)}...
-              </p>
-              {selectedProcedureName && (
-                <p className="text-xs text-[#ff0000] mt-1">
-                  Selected: {selectedProcedureName}
-                </p>
-              )}
-            </div>
-
             {/* Right: Navigation */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-shrink-0">
               {/* Back Button */}
               <button
                 onClick={prevStep}
@@ -99,7 +87,7 @@ export function TourOverlay() {
                 }`}
               >
                 <ChevronLeft className="w-4 h-4" />
-                Back
+                <span className="hidden sm:inline">Back</span>
               </button>
 
               {/* Next/Complete Button */}
@@ -137,13 +125,13 @@ export function TourOverlay() {
             </div>
           </div>
 
-          {/* Mobile Story Text */}
-          <div className="lg:hidden mt-3 pt-3 border-t border-gray-600">
+          {/* Story Text - Full Width */}
+          <div className="bg-white/5 rounded-lg p-3">
             <p className="text-sm text-gray-300 leading-relaxed">
               {stepInfo.storyText}
             </p>
             {selectedProcedureName && (
-              <p className="text-xs text-[#ff0000] mt-2">
+              <p className="text-xs text-[#ff0000] mt-2 font-medium">
                 Selected Procedure: {selectedProcedureName}
               </p>
             )}
