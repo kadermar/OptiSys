@@ -367,8 +367,8 @@ export default function DashboardPage() {
             <NavCard
               href="/compliance-analysis"
               icon={BarChart3}
-              title="Compliance"
-              description="View detailed analysis"
+              title="Business Value"
+              description="Profit impact analysis"
               color="from-blue-500 to-indigo-600"
             />
             <NavCard
