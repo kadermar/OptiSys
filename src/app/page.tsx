@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   FileText,
   Users,
-  Database,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
@@ -356,7 +355,7 @@ export default function DashboardPage() {
             variants={staggerContainer}
             initial="initial"
             animate="animate"
-            className="grid grid-cols-2 md:grid-cols-4 gap-3"
+            className="grid grid-cols-1 sm:grid-cols-3 gap-3"
           >
             <NavCard
               href="/procedures"
@@ -378,13 +377,6 @@ export default function DashboardPage() {
               title="Workers"
               description="Performance tracking"
               color="from-green-500 to-emerald-600"
-            />
-            <NavCard
-              href="/knowledge-base"
-              icon={Database}
-              title="Knowledge Base"
-              description="Browse all data"
-              color="from-purple-500 to-violet-600"
             />
           </motion.div>
         </div>

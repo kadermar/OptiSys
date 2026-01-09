@@ -35,11 +35,12 @@ interface ProcedureStepAnalysisProps {
 }
 
 export function ProcedureStepAnalysis({ procedures, dateRange, fixedProcedureId }: ProcedureStepAnalysisProps) {
-  const [selectedProcedure, setSelectedProcedure] = useState<string>('all');
+  // Initialize with fixedProcedureId to prevent fetching all data on first render
+  const [selectedProcedure, setSelectedProcedure] = useState<string>(fixedProcedureId || 'all');
   const [stepData, setStepData] = useState<StepData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Initialize selected procedure
+  // Update selected procedure when fixedProcedureId changes
   useEffect(() => {
     if (fixedProcedureId) {
       setSelectedProcedure(fixedProcedureId);
