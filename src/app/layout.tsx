@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { OptiSysSidebar } from "@/components/layout/OptiSysSidebar";
 import { TourProvider } from "@/components/tour";
@@ -40,6 +41,7 @@ export default function RootLayout({
             <OptiSysSidebar>{children}</OptiSysSidebar>
           </TourProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
