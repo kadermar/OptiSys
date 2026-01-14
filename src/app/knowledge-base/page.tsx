@@ -359,6 +359,17 @@ function KnowledgeBaseContent() {
     return [...data].sort((a, b) => {
       let aVal = a[sortConfig.column] ?? '';
       let bVal = b[sortConfig.column] ?? '';
+
+      // Handle ID fields like "WO-1598", "PROC-001", etc. - extract numeric part for sorting
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        const aMatch = aVal.match(/(\d+)$/);
+        const bMatch = bVal.match(/(\d+)$/);
+        if (aMatch && bMatch) {
+          aVal = parseInt(aMatch[1], 10);
+          bVal = parseInt(bMatch[1], 10);
+        }
+      }
+
       // Convert numeric strings to numbers for proper sorting
       if (typeof aVal === 'string' && aVal !== '' && !isNaN(parseFloat(aVal))) {
         aVal = parseFloat(aVal);

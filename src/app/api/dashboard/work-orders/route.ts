@@ -136,7 +136,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const procedureId = searchParams.get('procedure_id');
     const startDate = searchParams.get('startDate') || '2024-01-01';
-    const endDate = searchParams.get('endDate') || '2025-12-31';
+    // Use current date + 1 year as default end date to ensure new work orders are always included
+    const defaultEndDate = new Date();
+    defaultEndDate.setFullYear(defaultEndDate.getFullYear() + 1);
+    const endDate = searchParams.get('endDate') || defaultEndDate.toISOString().split('T')[0];
 
     let query;
     if (procedureId) {
